@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="SmartHome.Backend.Tests/SmartHome.Backend.Tests.csproj" />
+  <Project Path="SmartHome.Backend/SmartHome.Backend.csproj" />
+  <Project Path="SmartHome.Frontend.Tests/SmartHome.Frontend.Tests.csproj" />
+  <Project Path="SmartHome.Frontend/SmartHome.Frontend.csproj" />
+  <Project Path="SmartHome.Shared.Tests/SmartHome.Shared.Tests.csproj" />
+  <Project Path="SmartHome.Shared/SmartHome.Shared.csproj" />
+</Solution>

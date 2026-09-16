@@ -1,0 +1,21 @@
+[Unit]
+Description=Smart Home Media Bridge Frontend
+After=network-online.target smarthome-backend.service
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=smarthome
+Group=smarthome
+WorkingDirectory=/opt/smarthome-media-bridge/frontend
+ExecStart=/usr/bin/dotnet /opt/smarthome-media-bridge/frontend/SmartHome.Frontend.dll
+EnvironmentFile=/etc/smarthome-media-bridge/smarthome.env
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/smarthome-media-bridge
+
+[Install]
+WantedBy=multi-user.target

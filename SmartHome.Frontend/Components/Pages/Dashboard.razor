@@ -1,0 +1,187 @@
+@page "/dashboard"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using SmartHome.Shared.Persistence
+@inject IDbContextFactory<SmartHomeDbContext> DbContextFactory
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Dashboard</PageTitle>
+
+<h1 class="h2 mb-4">Dashboard</h1>
+
+@if (LoadError is not null)
+{
+    <div class="alert alert-danger" role="alert">No se pudieron cargar todos los datos: @LoadError</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <p class="text-secondary mb-1">Backend</p>
+                <p class="h4 mb-0"><span class="badge @BackendBadgeClass">@BackendStatus</span></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <p class="text-secondary mb-1">Volumen actual</p>
+                <p class="h4 mb-0">@(CurrentVolume is null ? "No disponible" : $"{CurrentVolume}%")</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <p class="text-secondary mb-1">Tokens válidos</p>
+                <p class="h4 mb-0">@ValidTokens.Count</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h5">Tokens OAuth activos</h2>
+        @if (ValidTokens.Count == 0)
+        {
+            <p class="text-secondary mb-0">No hay tokens activos.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Expira</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var token in ValidTokens)
+                        {
+                            <tr>
+                                <td>@token.AgentUserId</td>
+                                <td>@token.ExpiresAt.ToLocalTime().ToString("g")</td>
+                                <td><span class="badge text-bg-success">Válido</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>
+
+<section class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h2 class="h5">Historial reciente</h2>
+        @if (History.Count == 0)
+        {
+            <p class="text-secondary mb-0">Todavía no hay reproducciones registradas.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Consulta</th>
+                            <th>Fecha</th>
+                            <th>Resultado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in History)
+                        {
+                            <tr>
+                                <td>@item.Query</td>
+                                <td>@item.Date.ToLocalTime().ToString("g")</td>
+                                <td>
+                                    <span class="badge @(item.Success ? "text-bg-success" : "text-bg-danger")">
+                                        @(item.Success ? "Correcto" : "Fallido")
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private List<TokenRow> ValidTokens { get; } = [];
+    private List<HistoryRow> History { get; } = [];
+    private string BackendStatus { get; set; } = "No disponible";
+    private int? CurrentVolume { get; set; }
+    private string? LoadError { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+            var now = DateTime.UtcNow;
+            var tokens = await context.OauthTokens
+                .AsNoTracking()
+                .Where(token => token.AccessExpiresAt > now)
+                .OrderBy(token => token.AccessExpiresAt)
+                .Select(token => new TokenRow(token.AgentUserId, token.AccessExpiresAt))
+                .ToListAsync();
+            ValidTokens.AddRange(tokens);
+
+            var history = await context.HistorialReproducciones
+                .AsNoTracking()
+                .OrderByDescending(item => item.Fecha)
+                .Take(50)
+                .Select(item => new HistoryRow(item.QueryTexto, item.Fecha, item.Exitoso))
+                .ToListAsync();
+            History.AddRange(history);
+        }
+        catch (Exception)
+        {
+            LoadError = "la base de datos no está disponible";
+        }
+
+        await LoadBackendStateAsync();
+    }
+
+    private async Task LoadBackendStateAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("Backend");
+            using var healthResponse = await client.GetAsync("health");
+            BackendStatus = healthResponse.IsSuccessStatusCode ? "Conectado" : "Error";
+
+            using var volumeResponse = await client.GetAsync("api/status/volume");
+            if (volumeResponse.IsSuccessStatusCode)
+            {
+                var volume = await volumeResponse.Content.ReadFromJsonAsync<VolumeResponse>();
+                CurrentVolume = volume?.CurrentVolume;
+            }
+        }
+        catch (Exception)
+        {
+            BackendStatus = "No disponible";
+        }
+    }
+
+    private string BackendBadgeClass => BackendStatus == "Conectado"
+        ? "text-bg-success"
+        : "text-bg-secondary";
+
+    private sealed record TokenRow(string AgentUserId, DateTime ExpiresAt);
+
+    private sealed record HistoryRow(string Query, DateTime Date, bool Success);
+
+    private sealed class VolumeResponse
+    {
+        public int? CurrentVolume { get; set; }
+    }
+}

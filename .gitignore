@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+data/
+SmartHome.Shared/data/
+*.db
+*.db-shm
+*.db-wal
+.env
+*.env
+!*.env.example

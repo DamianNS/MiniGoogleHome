@@ -1,0 +1,61 @@
+@page "/oauth/authorize"
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
+
+<PageTitle>Vincular Google Home</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4 p-lg-5">
+                <p class="text-uppercase text-secondary fw-semibold small mb-2">OAuth 2.0</p>
+                <h1 class="h3">Vincular Google Home</h1>
+                <p class="text-secondary">Confirma tus credenciales locales para autorizar el acceso al reproductor.</p>
+
+                @if (!string.IsNullOrWhiteSpace(Error))
+                {
+                    <div class="alert alert-danger" role="alert">No se pudo completar la autorización.</div>
+                }
+
+                <form method="post" action="/oauth/authorize/submit" class="mt-4">
+                    <AntiforgeryToken />
+                    <input type="hidden" name="client_id" value="@ClientId" />
+                    <input type="hidden" name="redirect_uri" value="@RedirectUri" />
+                    <input type="hidden" name="response_type" value="@ResponseType" />
+                    <input type="hidden" name="state" value="@State" />
+                    <input type="hidden" name="scope" value="@Scope" />
+                    <div class="mb-3">
+                        <label class="form-label" for="oauth-username">Usuario</label>
+                        <input class="form-control" id="oauth-username" name="username" autocomplete="username" required />
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label" for="oauth-password">Contraseña</label>
+                        <input class="form-control" id="oauth-password" name="password" type="password" autocomplete="current-password" required />
+                    </div>
+                    <button class="btn btn-primary" type="submit">Autorizar dispositivo</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "client_id")]
+    private string ClientId { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery(Name = "redirect_uri")]
+    private string RedirectUri { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery(Name = "response_type")]
+    private string ResponseType { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery(Name = "state")]
+    private string State { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery(Name = "scope")]
+    private string Scope { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery(Name = "error")]
+    private string? Error { get; set; }
+}
