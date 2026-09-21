@@ -15,3 +15,18 @@
 		</div>
 	</div>
 </section>
+
+<form method="post" @formname="InfoForm" @onsubmit="OnClick">
+	<AntiforgeryToken />
+	<button class="btn btn-primary position-fixed bottom-0 end-0 m-4" type="submit" 
+		data-bs-toggle="offcanvas" data-bs-target="#offcanvasInfo" aria-controls="offcanvasInfo">
+		<i class="bi bi-info-circle"></i>
+	</button>
+</form>
+
+@code{
+	private void OnClick()
+	{
+        Console.WriteLine("Button clicked!");
+	}
+}
