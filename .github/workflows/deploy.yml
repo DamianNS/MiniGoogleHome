@@ -1,0 +1,56 @@
+name: CI/CD SmartHome
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # Configuramos .NET SDK en el servidor de GitHub
+      - name: Configurar .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0' # Ajusta a tu versión de .NET (ej. '8.0' o '9.0')
+
+      # Iniciamos sesión en Docker Hub usando el comando nativo de Docker
+      - name: Iniciar sesión en Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # Compilar, empaquetar y subir la API usando Docker
+      - name: Publicar y subir API Service
+        run: |
+          dotnet publish ./SmartHome.Backend/SmartHome.Backend.csproj -c Release /t:PublishContainer -p:ContainerRepository=smarthome-backend -p:ContainerRuntimeIdentifier=linux-arm64
+          docker tag smarthome-backend:latest ${{ secrets.DOCKER_USERNAME }}/smarthome-backend:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/smarthome-backend:latest
+
+      # Compilar, empaquetar y subir el WebFrontend usando Docker
+      - name: Publicar y subir Web Frontend
+        run: |
+          dotnet publish ./SmartHome.Frontend/SmartHome.Frontend.csproj -c Release /t:PublishContainer -p:ContainerRepository=smarthome-frontend -p:ContainerRuntimeIdentifier=linux-arm64
+          docker tag smarthome-frontend:latest ${{ secrets.DOCKER_USERNAME }}/smarthome-frontend:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/smarthome-frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar en el servidor de DonWeb vía SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 2222
+          script: |
+            cd ~/docker/SmartHome
+            podman pull docker.io/damianns1/smarthome-backend:latest
+            podman pull docker.io/damianns1/smarthome-frontend:latest
+            systemctl --user restart minigooglehome.service
+
