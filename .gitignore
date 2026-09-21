@@ -8,3 +8,5 @@ SmartHome.Shared/data/
 .env
 *.env
 !*.env.example
+/.vs/SmartHome.slnx
+*.user
