@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/docs/">
+    <File Path=".github/workflows/deploy.yml" />
+    <File Path="docker-compose.yaml" />
+  </Folder>
   <Project Path="SmartHome.Backend.Tests/SmartHome.Backend.Tests.csproj" />
   <Project Path="SmartHome.Backend/SmartHome.Backend.csproj" />
   <Project Path="SmartHome.Frontend.Tests/SmartHome.Frontend.Tests.csproj" />
