@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: ../SmartHome.Backend  # Ruta hacia la carpeta de tu API
+      dockerfile: Dockerfile
+    image: smarthome-backend:latest
+    environment:
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "5010"
+      ConnectionStrings__SharedDatabase: "Data Source=/app/data/smarthome.db"
+    expose:
+      - "5010"
+    networks:
+      - "smarthomered"
+    volumes:
+      - ./datos:/app/data
+    ports:
+      - "5010:5010"
+  frontend:
+    build:
+      context: ../SmartHome.Frontend  # Ruta hacia la carpeta de tu frontend
+      dockerfile: Dockerfile
+    image: smarthome-frontend:latest
+    environment:
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "5011"
+      APISERVICE_HTTP: "http://apiservice:5010"
+      services__apiservice__http__0: "http://apiservice:5010"
+      APISERVICE_HTTPS: "https://apiservice:5010"
+      ConnectionStrings__SharedDatabase: "Data Source=/app/data/smarthome.db"
+    ports:
+      - "5011:5011"
+    depends_on:
+      backend:
+        condition: "service_started"
+    networks:
+      - "smarthomered"
+    volumes:
+      - ./datos:/app/data
+networks:
+  smarthomered:
+    driver: "bridge"
