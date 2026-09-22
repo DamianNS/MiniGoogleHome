@@ -16,6 +16,7 @@
                 @if (!string.IsNullOrWhiteSpace(Error))
                 {
                     <div class="alert alert-danger" role="alert">No se pudo completar la autorización.</div>
+                    <div class="alert alert-danger" role="alert">@Error</div>
                 }
 
                 <form method="post" action="/oauth/authorize/submit" class="mt-4">
