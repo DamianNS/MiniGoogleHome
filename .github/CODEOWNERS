@@ -1,0 +1,5 @@
+# DamianNS es el responsable de revisar todo el repositorio
+* @DamianNS
+
+# Protege también el propio archivo CODEOWNERS
+/.github/CODEOWNERS @DamianNS
