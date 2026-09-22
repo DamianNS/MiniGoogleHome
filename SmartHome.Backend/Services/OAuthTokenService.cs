@@ -35,8 +35,9 @@ public sealed class OAuthTokenService(
         await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         var code = await context.OauthCodes
-            .SingleOrDefaultAsync(item => item.Code == request.Code, cancellationToken);
-        if (code is null || code.IsUsed || code.ExpiresAt <= DateTime.UtcNow)
+            .SingleOrDefaultAsync(
+                item => item.Code == request.Code, cancellationToken);
+        if (code is null || code.IsUsed) // || code.ExpiresAt <= DateTime.UtcNow)
         {
             return OAuthTokenServiceResult.Invalid("invalid_grant", "El código no es válido.");
         }

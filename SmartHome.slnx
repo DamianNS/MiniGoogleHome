@@ -1,7 +1,13 @@
 <Solution>
   <Folder Name="/docs/">
+    <File Path=".github/copilot-instructions.md" />
     <File Path=".github/workflows/deploy.yml" />
+    <File Path="AGENTS.md" />
     <File Path="docker-compose.yaml" />
+    <File Path="docs/Documentacion_Arquitectura_MiniGoogleHome.md" />
+    <File Path="Especificacion_SmartHome_MediaBridge.md" />
+    <File Path="README.md" />
+    <File Path="tareas.md" />
   </Folder>
   <Project Path="SmartHome.Backend.Tests/SmartHome.Backend.Tests.csproj" />
   <Project Path="SmartHome.Backend/SmartHome.Backend.csproj" />

@@ -1,10 +1,4 @@
 @page "/dashboard"
-@attribute [Authorize]
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.EntityFrameworkCore
-@using SmartHome.Shared.Persistence
-@inject IDbContextFactory<SmartHomeDbContext> DbContextFactory
-@inject IHttpClientFactory HttpClientFactory
 
 <PageTitle>Dashboard</PageTitle>
 
@@ -114,74 +108,40 @@
     </div>
 </section>
 
-@code {
-    private List<TokenRow> ValidTokens { get; } = [];
-    private List<HistoryRow> History { get; } = [];
-    private string BackendStatus { get; set; } = "No disponible";
-    private int? CurrentVolume { get; set; }
-    private string? LoadError { get; set; }
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
+<section class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h2 class="h5">Codes</h2>
+        @if (Codes == null || Codes.Count == 0)
         {
-            await using var context = await DbContextFactory.CreateDbContextAsync();
-            var now = DateTime.UtcNow;
-            var tokens = await context.OauthTokens
-                .AsNoTracking()
-                .Where(token => token.AccessExpiresAt > now)
-                .OrderBy(token => token.AccessExpiresAt)
-                .Select(token => new TokenRow(token.AgentUserId, token.AccessExpiresAt))
-                .ToListAsync();
-            ValidTokens.AddRange(tokens);
-
-            var history = await context.HistorialReproducciones
-                .AsNoTracking()
-                .OrderByDescending(item => item.Fecha)
-                .Take(50)
-                .Select(item => new HistoryRow(item.QueryTexto, item.Fecha, item.Exitoso))
-                .ToListAsync();
-            History.AddRange(history);
+            <p class="text-secondary mb-0">Todavía no hay reproducciones registradas.</p>
         }
-        catch (Exception)
+        else
         {
-            LoadError = "la base de datos no está disponible";
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Fecha</th>
+                            <th>Usado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Codes)
+                        {
+                            <tr>
+                                <td>@item.Code</td>
+                                <td>@item.ExpiresAt.ToLocalTime().ToString("g")</td>
+                                <td>
+                                    <span class="badge @(item.IsUsed ? "text-bg-success" : "text-bg-danger")">
+                                        @(item.IsUsed ? "Usado" : "No usado")
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         }
-
-        await LoadBackendStateAsync();
-    }
-
-    private async Task LoadBackendStateAsync()
-    {
-        try
-        {
-            var client = HttpClientFactory.CreateClient("Backend");
-            using var healthResponse = await client.GetAsync("health");
-            BackendStatus = healthResponse.IsSuccessStatusCode ? "Conectado" : "Error";
-
-            using var volumeResponse = await client.GetAsync("api/status/volume");
-            if (volumeResponse.IsSuccessStatusCode)
-            {
-                var volume = await volumeResponse.Content.ReadFromJsonAsync<VolumeResponse>();
-                CurrentVolume = volume?.CurrentVolume;
-            }
-        }
-        catch (Exception)
-        {
-            BackendStatus = "No disponible";
-        }
-    }
-
-    private string BackendBadgeClass => BackendStatus == "Conectado"
-        ? "text-bg-success"
-        : "text-bg-secondary";
-
-    private sealed record TokenRow(string AgentUserId, DateTime ExpiresAt);
-
-    private sealed record HistoryRow(string Query, DateTime Date, bool Success);
-
-    private sealed class VolumeResponse
-    {
-        public int? CurrentVolume { get; set; }
-    }
-}
+    </div>
+</section>
