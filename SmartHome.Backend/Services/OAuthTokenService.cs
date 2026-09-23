@@ -10,7 +10,8 @@ namespace SmartHome.Backend.Services;
 
 public sealed class OAuthTokenService(
     IDbContextFactory<SmartHomeDbContext> dbContextFactory,
-    IOptions<OAuthOptions> oauthOptions)
+    IOptions<OAuthOptions> oauthOptions,
+    ILogger<OAuthTokenService> log)
 {
     public async Task<OAuthTokenServiceResult> ExchangeAsync(
         OAuthTokenRequest request,
@@ -19,16 +20,20 @@ public sealed class OAuthTokenService(
         if (!IsValidClient(request.ClientId, request.ClientSecret)
             || !IsAllowedRedirectUri(request.RedirectUri))
         {
+            log.LogCritical("El cliente OAuth no es válido. ClientId: {ClientId} {RedirectUri}", request.ClientId, request.RedirectUri);
+            log.LogCritical("ClientSecret: {ClientSecret}", request.ClientSecret);
             return OAuthTokenServiceResult.Invalid("invalid_client", "El cliente OAuth no es válido.");
         }
 
         if (!string.Equals(request.GrantType, "authorization_code", StringComparison.Ordinal))
         {
+            log.LogCritical("El grant_type no está soportado. ClientId: {ClientId} {GrantType}", request.ClientId, request.GrantType);
             return OAuthTokenServiceResult.Invalid("unsupported_grant_type", "El grant_type no está soportado.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Code))
         {
+            log.LogCritical("El código no es válido. ClientId: {ClientId} {Code}", request.ClientId, request.Code);
             return OAuthTokenServiceResult.Invalid("invalid_grant", "El código no es válido.");
         }
 
@@ -39,6 +44,7 @@ public sealed class OAuthTokenService(
                 item => item.Code == request.Code, cancellationToken);
         if (code is null || code.IsUsed) // || code.ExpiresAt <= DateTime.UtcNow)
         {
+            log.LogCritical("El código no es válido. ClientId: {ClientId} {Code}", request.ClientId, request.Code);
             return OAuthTokenServiceResult.Invalid("invalid_grant", "El código no es válido.");
         }
 
@@ -57,11 +63,14 @@ public sealed class OAuthTokenService(
     {
         if (!IsValidClient(request.ClientId, request.ClientSecret))
         {
+            log.LogCritical("El cliente OAuth no es válido. ClientId: {ClientId}", request.ClientId);
+            log.LogCritical("ClientSecret: {ClientSecret}", request.ClientSecret);
             return OAuthTokenServiceResult.Invalid("invalid_client", "El cliente OAuth no es válido.");
         }
 
         if (string.IsNullOrWhiteSpace(request.RefreshToken))
         {
+            log.LogCritical("El refresh token NULL no es válido. ClientId: {ClientId} {RefreshToken}", request.ClientId, request.RefreshToken);
             return OAuthTokenServiceResult.Invalid("invalid_grant", "El refresh token no es válido.");
         }
 
@@ -70,6 +79,7 @@ public sealed class OAuthTokenService(
             .SingleOrDefaultAsync(item => item.RefreshToken == request.RefreshToken, cancellationToken);
         if (token is null)
         {
+            log.LogCritical("El refresh token no es válido. ClientId: {ClientId} {RefreshToken}", request.ClientId, request.RefreshToken);
             return OAuthTokenServiceResult.Invalid("invalid_grant", "El refresh token no es válido.");
         }
 
