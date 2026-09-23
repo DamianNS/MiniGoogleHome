@@ -102,11 +102,12 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
             }
         }
 
-        return Ok(new GoogleHomeResponse
-        {
-            RequestId = request.RequestId,
-            Payload = new GoogleHomeResponsePayload { Commands = responses }
-        });
+        return Ok();
+        //    new GoogleHomeResponse
+        //{
+        //    RequestId = request.RequestId,
+        //    Payload = new GoogleHomeResponsePayload { Commands = responses }
+        //});
     }
 
     private async Task<IActionResult> QueryAsync(

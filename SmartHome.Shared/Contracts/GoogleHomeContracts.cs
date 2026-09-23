@@ -85,8 +85,8 @@ public sealed class GoogleHomeResponsePayload
     [JsonPropertyName("devices")]
     public List<GoogleHomeDevice> Devices { get; set; } = [];
 
-    [JsonPropertyName("commands")]
-    public List<GoogleHomeCommandResponse>? Commands { get; set; } = null;
+    //[JsonPropertyName("commands")]
+    //public List<GoogleHomeCommandResponse>? Commands { get; set; } = null;
 }
 
 public sealed class GoogleHomeQueryResponse
