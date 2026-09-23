@@ -162,6 +162,7 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
                         Traits =
                         [
                             "action.devices.traits.MediaState",
+                            "action.devices.traits.TransportControl",
                             "action.devices.traits.Volume"
                         ],
                         Name = new GoogleHomeDeviceName
@@ -177,7 +178,8 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
                             Model = "PiMediaBridgeV1",
                             HwVersion = "Raspberry Pi",
                             SwVersion = "1.0.0"
-                        }
+                        },
+                        
                     }
                 ]
             }

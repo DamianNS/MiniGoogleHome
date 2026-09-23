@@ -86,7 +86,7 @@ public sealed class GoogleHomeResponsePayload
     public List<GoogleHomeDevice> Devices { get; set; } = [];
 
     [JsonPropertyName("commands")]
-    public List<GoogleHomeCommandResponse> Commands { get; set; } = [];
+    public List<GoogleHomeCommandResponse>? Commands { get; set; } = null;
 }
 
 public sealed class GoogleHomeQueryResponse
@@ -120,6 +120,9 @@ public sealed class GoogleHomeDevice
 
     [JsonPropertyName("deviceInfo")]
     public GoogleHomeDeviceInfo DeviceInfo { get; set; } = new();
+
+    [JsonPropertyName("attributes")]
+    public GoogleHomeDeviceAttributes Attributes { get; set; } = new();
 }
 
 public sealed class GoogleHomeDeviceName
@@ -194,4 +197,28 @@ public static class GoogleHomeJson
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip
     };
+}
+
+public sealed class GoogleHomeDeviceAttributes
+{
+    [JsonPropertyName("supportPlaybackState")]
+    public bool supportPlaybackState { get; set; } = true;
+
+    [JsonPropertyName("supportActivityState")]
+    public bool supportActivityState { get; set; } = true;
+
+    [JsonPropertyName("volumeMaxLevel")]
+    public int volumeMaxLevel { get; set; } = 100;
+
+    [JsonPropertyName("volumeCanMuteAndUnmute")]
+    public bool volumeCanMuteAndUnmute { get; set; } = true;
+
+    [JsonPropertyName("transportControlSupportedCommands")]
+    public List<string> transportControlSupportedCommands { get; set; } = [
+        "NEXT",
+        "PAUSE",
+        "PREVIOUS",
+        "STOP",
+        "RESUME"
+        ];
 }
