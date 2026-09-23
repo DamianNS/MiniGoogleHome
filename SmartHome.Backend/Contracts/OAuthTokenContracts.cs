@@ -12,7 +12,7 @@ public sealed class OAuthTokenRequest
 
     public string RedirectUri { get; set; } = string.Empty;
 
-    public string RefreshToken { get; set; } = string.Empty;
+    public string? RefreshToken { get; set; }
 }
 
 public sealed class OAuthTokenResponse

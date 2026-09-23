@@ -17,7 +17,7 @@ public static class Program
     {
 
         var builder = WebApplication.CreateBuilder(args);
-
+        
         builder.Services.AddDataProtection()
                 .PersistKeysToFileSystem(new DirectoryInfo(@"./data/dataprotection"))
                 .SetApplicationName("SmartHomeApp");
@@ -109,6 +109,7 @@ public static class Program
             AdminAuthenticationService authenticationService,
             AuthorizationCodeService authorizationCodeService,
             IOptions<OAuthOptions> oauthOptions,
+            ILogger<AuthorizationCodeService> _logger,
             CancellationToken cancellationToken) =>
         {
             var form = await httpContext.Request.ReadFormAsync(cancellationToken);
@@ -119,6 +120,9 @@ public static class Program
             var username = form["username"].ToString();
             var password = form["password"].ToString();
             var options = oauthOptions.Value;
+
+            _logger.LogInformation("Received OAuth authorization request: client_id={ClientId}, redirect_uri={RedirectUri}, response_type={ResponseType}, state={State}, username={Username}",
+                clientId, redirectUri, responseType, state, username);
 
             var validRequest = string.Equals(clientId, options.ClientId, StringComparison.Ordinal)
                 && string.Equals(responseType, "code", StringComparison.Ordinal)
@@ -135,11 +139,14 @@ public static class Program
             }
 
             var code = await authorizationCodeService.CreateAsync(user.AgentUserId, cancellationToken);
+            _logger.LogInformation("Generated authorization code for user {AgentUserId}: {Code}", user.AgentUserId, code);
             var parameters = new Dictionary<string, string?> { ["code"] = code };
             if (!string.IsNullOrWhiteSpace(state))
             {
                 parameters["state"] = state;
             }
+
+            _logger.LogInformation("Redirecting to {RedirectUri} with parameters: {Parameters}", redirectUri, parameters);
 
             return Results.Redirect(QueryHelpers.AddQueryString(redirectUri, parameters));
         });

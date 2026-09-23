@@ -1,7 +1,5 @@
 @page "/oauth/authorize"
-@attribute [AllowAnonymous]
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components
+@layout GoogleLayout
 
 <PageTitle>Vincular Google Home</PageTitle>
 
@@ -9,8 +7,8 @@
     <div class="col-12 col-lg-7">
         <div class="card shadow-sm border-0">
             <div class="card-body p-4 p-lg-5">
-                <p class="text-uppercase text-secondary fw-semibold small mb-2">OAuth 2.0</p>
-                <h1 class="h3">Vincular Google Home</h1>
+                <p class="text-uppercase text-secondary fw-semibold small mb-2">Niquel Soft Mini</p>
+                <h1 class="h3">Vincular con Google Home</h1>
                 <p class="text-secondary">Confirma tus credenciales locales para autorizar el acceso al reproductor.</p>
 
                 @if (!string.IsNullOrWhiteSpace(Error))
@@ -40,23 +38,3 @@
         </div>
     </div>
 </div>
-
-@code {
-    [SupplyParameterFromQuery(Name = "client_id")]
-    private string ClientId { get; set; } = string.Empty;
-
-    [SupplyParameterFromQuery(Name = "redirect_uri")]
-    private string RedirectUri { get; set; } = string.Empty;
-
-    [SupplyParameterFromQuery(Name = "response_type")]
-    private string ResponseType { get; set; } = string.Empty;
-
-    [SupplyParameterFromQuery(Name = "state")]
-    private string State { get; set; } = string.Empty;
-
-    [SupplyParameterFromQuery(Name = "scope")]
-    private string Scope { get; set; } = string.Empty;
-
-    [SupplyParameterFromQuery(Name = "error")]
-    private string? Error { get; set; }
-}
