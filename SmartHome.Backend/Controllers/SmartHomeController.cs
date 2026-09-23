@@ -143,6 +143,7 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
 
     private GoogleHomeResponse CreateSyncResponse(string requestId)
     {
+        log.LogInformation("Creating SYNC response for request: {RequestId}", requestId);
         var agentUserId = User.FindFirstValue("agent_user_id") ?? string.Empty;
         return new GoogleHomeResponse
         {
