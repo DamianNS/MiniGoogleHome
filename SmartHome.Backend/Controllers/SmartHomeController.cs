@@ -7,28 +7,24 @@ using SmartHome.Shared.Contracts;
 namespace SmartHome.Backend.Controllers;
 
 [ApiController]
-[Authorize(AuthenticationSchemes = "Bearer")]
+//[Authorize(AuthenticationSchemes = "Bearer")]
 [Route("api/smarthome")]
-public sealed class SmartHomeController : ControllerBase
+public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, ILogger<SmartHomeController> log) : ControllerBase
 {
     private const string DeviceId = "pi_media_speaker_01";
-    private readonly MediaBridgeService? mediaBridgeService;
-
-    public SmartHomeController()
-    {
-    }
-
-    [ActivatorUtilitiesConstructor]
-    public SmartHomeController(MediaBridgeService mediaBridgeService)
-    {
-        this.mediaBridgeService = mediaBridgeService;
-    }
+        
+    //[ActivatorUtilitiesConstructor]
+    //public SmartHomeController(MediaBridgeService mediaBridgeService)
+    //{
+    //    this.mediaBridgeService = mediaBridgeService;
+    //}
 
     [HttpPost]
     public async Task<IActionResult> Handle(
         [FromBody] GoogleHomeRequest request,
         CancellationToken cancellationToken)
     {
+        log.LogInformation("Received request: {RequestId}, Intent: {Intent}", request.RequestId, request.Inputs.FirstOrDefault()?.Intent);
         var intent = request.Inputs.FirstOrDefault()?.Intent;
         return intent switch
         {
@@ -51,8 +47,10 @@ public sealed class SmartHomeController : ControllerBase
         GoogleHomeRequest request,
         CancellationToken cancellationToken)
     {
+        log.LogInformation("Executing commands for request: {RequestId}", request.RequestId);
         if (mediaBridgeService is null || request.Inputs.Count == 0)
         {
+            log.LogCritical("MediaBridgeService is not initialized or request inputs are empty for request: {RequestId}", request.RequestId);
             return BadRequest(CreateError(request.RequestId, "invalid_request", "El payload EXECUTE no es válido."));
         }
 
