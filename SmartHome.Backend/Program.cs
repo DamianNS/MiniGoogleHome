@@ -84,7 +84,10 @@ public static class Program {
             }
         });
 
+        app.MapStaticAssets();
         app.MapControllers();
+        app.UseStaticFiles();        
+        app.MapFallbackToFile("index.html");
 
         app.Run();
     }
