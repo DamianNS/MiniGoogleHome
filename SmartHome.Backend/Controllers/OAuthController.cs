@@ -15,7 +15,7 @@ public sealed class OAuthController(OAuthTokenService tokenService, ILogger<OAut
         CancellationToken cancellationToken)
     {
         log.LogInformation($"Received OAuth token request with grant type: {request.GrantType}");
-        log.LogDebug($"Request details: ClientId={request.ClientId}, RedirectUri={request.RedirectUri}, Code={request.Code}, RefreshToken={request.RefreshToken}");
+        log.LogInformation($"Request details: ClientId={request.ClientId}, RedirectUri={request.RedirectUri}, Code={request.Code}, RefreshToken={request.RefreshToken}");
 
         OAuthTokenServiceResult result;
         if (string.Equals(request.GrantType, "refresh_token", StringComparison.Ordinal))
@@ -26,7 +26,8 @@ public sealed class OAuthController(OAuthTokenService tokenService, ILogger<OAut
         {
             result = await tokenService.ExchangeAsync(request, cancellationToken);
         }
-
+        
+        log.LogInformation($"Token request result: IsSuccess={result.IsSuccess}");
         return result.IsSuccess
             ? Ok(result.Response)
             : BadRequest(result.Error);
