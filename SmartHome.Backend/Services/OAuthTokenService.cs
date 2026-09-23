@@ -97,6 +97,13 @@ public sealed class OAuthTokenService(
         var options = oauthOptions.Value;
         var providedSecret = System.Text.Encoding.UTF8.GetBytes(clientSecret);
         var configuredSecret = System.Text.Encoding.UTF8.GetBytes(options.ClientSecret);
+
+        if(string.IsNullOrWhiteSpace(options.ClientId)) log.LogCritical("El ClientId de OAuth no está configurado.");
+        if(string.IsNullOrWhiteSpace(options.ClientSecret)) log.LogCritical("El ClientSecret de OAuth no está configurado.");
+        if(!string.Equals(clientId, options.ClientId, StringComparison.Ordinal)) log.LogCritical("El ClientId proporcionado no coincide con el configurado. Proporcionado: {ClientId}, Configurado: {ConfiguredClientId}", clientId, options.ClientId);
+        if(providedSecret.Length != configuredSecret.Length) log.LogCritical("La longitud del ClientSecret proporcionado no coincide con la longitud del configurado. Proporcionado: {ProvidedLength}, Configurado: {ConfiguredLength}", providedSecret.Length, configuredSecret.Length);
+        if(!CryptographicOperations.FixedTimeEquals(providedSecret, configuredSecret)) log.LogCritical("El ClientSecret proporcionado no coincide con el configurado.");
+
         return !string.IsNullOrWhiteSpace(options.ClientId)
             && !string.IsNullOrWhiteSpace(options.ClientSecret)
             && string.Equals(clientId, options.ClientId, StringComparison.Ordinal)
