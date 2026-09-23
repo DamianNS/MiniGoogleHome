@@ -6,7 +6,7 @@ namespace SmartHome.Backend.Controllers;
 
 [ApiController]
 [Route("oauth")]
-public sealed class OAuthController(OAuthTokenService tokenService) : ControllerBase
+public sealed class OAuthController(OAuthTokenService tokenService, ILogger<OAuthController> log) : ControllerBase
 {
     [HttpPost("token")]
     [Consumes("application/x-www-form-urlencoded")]
@@ -14,6 +14,9 @@ public sealed class OAuthController(OAuthTokenService tokenService) : Controller
         [FromForm] OAuthTokenRequest request,
         CancellationToken cancellationToken)
     {
+        log.LogInformation($"Received OAuth token request with grant type: {request.GrantType}");
+        log.LogDebug($"Request details: ClientId={request.ClientId}, RedirectUri={request.RedirectUri}, Code={request.Code}, RefreshToken={request.RefreshToken}");
+
         OAuthTokenServiceResult result;
         if (string.Equals(request.GrantType, "refresh_token", StringComparison.Ordinal))
         {
