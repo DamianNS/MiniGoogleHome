@@ -1,8 +1,9 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Backend.Services;
 using SmartHome.Shared.Contracts;
+using System.Security.Claims;
 
 namespace SmartHome.Backend.Controllers;
 
@@ -145,7 +146,8 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
     {
         log.LogInformation("Creating SYNC response for request: {RequestId}", requestId);
         var agentUserId = User.FindFirstValue("agent_user_id") ?? string.Empty;
-        return new GoogleHomeResponse
+
+        var ret = new GoogleHomeResponse
         {
             RequestId = requestId,
             Payload = new GoogleHomeResponsePayload
@@ -180,6 +182,11 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
                 ]
             }
         };
+
+        var texto = System.Text.Json.JsonSerializer.Serialize(ret);
+        log.LogInformation($"Serialized result SYNC: {texto}");
+
+        return ret;
     }
 
     private static GoogleHomeCommandResponse CreateCommandError(
