@@ -127,6 +127,21 @@ public static class Program
             var validRequest = string.Equals(clientId, options.ClientId, StringComparison.Ordinal)
                 && string.Equals(responseType, "code", StringComparison.Ordinal)
                 && options.AllowedRedirectUris.Contains(redirectUri, StringComparer.Ordinal);
+
+            if (!string.Equals(clientId, options.ClientId, StringComparison.Ordinal)) {
+                return Results.Redirect("/oauth/authorize?error=invalid_client_id");
+            }
+
+            if (!string.Equals(responseType, "code", StringComparison.Ordinal))
+            {
+                return Results.Redirect("/oauth/authorize?error=invalid_code");
+            }
+
+            if(!options.AllowedRedirectUris.Contains(redirectUri, StringComparer.Ordinal))
+            {
+                return Results.Redirect("/oauth/authorize?error=invalid_redirect_uri");
+            }
+
             if (!validRequest)
             {
                 return Results.Redirect("/oauth/authorize?error=invalid_request");
