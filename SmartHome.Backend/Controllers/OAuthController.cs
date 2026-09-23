@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Backend.Contracts;
 using SmartHome.Backend.Services;
+using System.Text.Json.Serialization;
 
 namespace SmartHome.Backend.Controllers;
 
@@ -28,6 +29,17 @@ public sealed class OAuthController(OAuthTokenService tokenService, ILogger<OAut
         }
         
         log.LogInformation($"Token request result: IsSuccess={result.IsSuccess}");
+        if(result.IsSuccess)
+        {
+            log.LogInformation($"Token response: AccessToken={result.Response?.AccessToken}, ExpiresIn={result.Response?.ExpiresIn}, RefreshToken={result.Response?.RefreshToken}");
+            var texto = System.Text.Json.JsonSerializer.Serialize(result.Response);
+            log.LogInformation($"Serialized result: {texto}");
+        }
+        else
+        {
+            log.LogWarning($"Token request failed: Error={result.Error?.Error}, Description={result.Error?.ErrorDescription}");
+        }
+        
         return result.IsSuccess
             ? Ok(result.Response)
             : BadRequest(result.Error);
