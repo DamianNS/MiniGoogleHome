@@ -63,14 +63,14 @@ public sealed class OAuthTokenService(
     {
         if (!IsValidClient(request.ClientId, request.ClientSecret))
         {
-            log.LogCritical("El cliente OAuth no es válido. ClientId: {ClientId}", request.ClientId);
-            log.LogCritical("ClientSecret: {ClientSecret}", request.ClientSecret);
+            log.LogCritical("RefreshAsync El cliente OAuth no es válido. ClientId: {ClientId}", request.ClientId);
+            log.LogCritical("RefreshAsync ClientSecret: {ClientSecret}", request.ClientSecret);
             return OAuthTokenServiceResult.Invalid("invalid_client", "El cliente OAuth no es válido.");
         }
 
         if (string.IsNullOrWhiteSpace(request.RefreshToken))
         {
-            log.LogCritical("El refresh token NULL no es válido. ClientId: {ClientId} {RefreshToken}", request.ClientId, request.RefreshToken);
+            log.LogCritical("RefreshAsync El refresh token NULL no es válido. ClientId: {ClientId} {RefreshToken}", request.ClientId, request.RefreshToken);
             return OAuthTokenServiceResult.Invalid("invalid_grant", "El refresh token no es válido.");
         }
 
@@ -79,7 +79,7 @@ public sealed class OAuthTokenService(
             .SingleOrDefaultAsync(item => item.RefreshToken == request.RefreshToken, cancellationToken);
         if (token is null)
         {
-            log.LogCritical("El refresh token no es válido. ClientId: {ClientId} {RefreshToken}", request.ClientId, request.RefreshToken);
+            log.LogCritical("RefreshAsync El refresh token no es válido. ClientId: {ClientId} {RefreshToken}", request.ClientId, request.RefreshToken);
             return OAuthTokenServiceResult.Invalid("invalid_grant", "El refresh token no es válido.");
         }
 
@@ -113,6 +113,21 @@ public sealed class OAuthTokenService(
 
     private bool IsAllowedRedirectUri(string redirectUri)
     {
+        if(string.IsNullOrWhiteSpace(redirectUri))
+        {
+            log.LogCritical("El redirect_uri proporcionado es nulo o vacío.");
+            return false;
+        }
+        if(oauthOptions.Value.AllowedRedirectUris is null || oauthOptions.Value.AllowedRedirectUris.Count() == 0)
+        {
+            log.LogCritical("No hay redirect_uris permitidos configurados.");
+            return false;
+        }
+        if(!oauthOptions.Value.AllowedRedirectUris.Contains(redirectUri, StringComparer.Ordinal))
+        {
+            log.LogCritical("El redirect_uri proporcionado no está permitido. Proporcionado: {RedirectUri}, Permitidos: {AllowedRedirectUris}", redirectUri, string.Join(", ", oauthOptions.Value.AllowedRedirectUris));
+            return false;
+        }
         return oauthOptions.Value.AllowedRedirectUris.Contains(redirectUri, StringComparer.Ordinal);
     }
 
