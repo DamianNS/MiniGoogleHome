@@ -114,7 +114,10 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
     private async Task<IActionResult> QueryAsync(
         GoogleHomeRequest request,
         CancellationToken cancellationToken)
-    {
+    {       
+        var textorequest = System.Text.Json.JsonSerializer.Serialize(request);
+        log.LogInformation($"Serialized textorequest QueryAsync: {textorequest}");
+
         var references = request.Inputs
             .SelectMany(input => input.Payload.Devices)
             .ToList();
@@ -134,7 +137,11 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
             states[DeviceId] = new GoogleHomeState
             {
                 Online = true,
-                CurrentVolume = currentVolume ?? 100
+                CurrentVolume = currentVolume ?? 100,
+                PlaybackState = "PAUSED",
+                Status = "SUCCESS",
+                ActivityState = "IDLE",
+                On = true
             };
         }
 
