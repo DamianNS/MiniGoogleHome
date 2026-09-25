@@ -1,11 +1,15 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.IdentityModel.Tokens;
 using SmartHome.Backend.Authentication;
 using SmartHome.Backend.Configuration;
 using SmartHome.Backend.Services;
 using SmartHome.Shared.Configuration;
 using SmartHome.Shared.Persistence;
+using System.Text;
 
 namespace SmartHome.Backend;
 
@@ -35,9 +39,30 @@ public static class Program {
         builder.Services.AddSingleton<IVolumeController, LinuxVolumeController>();
         builder.Services.Configure<OAuthOptions>(builder.Configuration.GetSection("OAuth"));
         builder.Services.Configure<AudioOptions>(builder.Configuration.GetSection("Audio"));
-        builder.Services
-            .AddAuthentication("Bearer")
-            .AddScheme<AuthenticationSchemeOptions, LocalBearerAuthenticationHandler>("Bearer", _ => { });
+        builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtOptions"));
+
+        var jwtOptions = builder.Configuration.GetSection("JwtOptions").Get<JwtOptions>();
+        var key = Encoding.ASCII.GetBytes(jwtOptions?.SecretKey ?? throw new InvalidOperationException("JWT SecretKey no configurada."));
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = false, // Cambiar a true en producción si configuras Issuer
+                ValidateAudience = false, // Cambiar a true en producción si configuras Audience
+                ValidateLifetime = true
+            };
+        });
+
+        //builder.Services
+        //    .AddAuthentication("Bearer")
+        //    .AddScheme<AuthenticationSchemeOptions, LocalBearerAuthenticationHandler>("Bearer", _ => { });
         builder.Services.AddAuthorization();
         builder.Services.AddProblemDetails();
         builder.Services.AddCors(options =>

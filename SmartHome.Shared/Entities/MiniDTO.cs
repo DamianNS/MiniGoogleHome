@@ -21,6 +21,6 @@ namespace SmartHome.Shared.Entities
         [Required]
         public EstadoEnum Estado { get; set; } = EstadoEnum.Off;
 
-        virtual public ICollection<Usuario>? Usuarios { get; set; }
+        virtual public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
     }
 }

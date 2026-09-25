@@ -1,17 +1,22 @@
-using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using SmartHome.Backend.Contracts;
 using SmartHome.Shared.Configuration;
 using SmartHome.Shared.Entities;
 using SmartHome.Shared.Persistence;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace SmartHome.Backend.Services;
 
 public sealed class OAuthTokenService(
     IDbContextFactory<SmartHomeDbContext> dbContextFactory,
     IOptions<OAuthOptions> oauthOptions,
-    ILogger<OAuthTokenService> log)
+    ILogger<OAuthTokenService> log,
+    IOptions<JwtOptions> jwtOptions)
 {
     public async Task<OAuthTokenServiceResult> ExchangeAsync(
         OAuthTokenRequest request,
@@ -48,7 +53,24 @@ public sealed class OAuthTokenService(
             return OAuthTokenServiceResult.Invalid("invalid_grant", "El código no es válido.");
         }
 
-        var token = CreateToken(code.AgentUserId);
+        var ids = code.AgentUserId.Remove(0, "usr_master_pi_".Length);
+        Usuario? user;
+        if (int.TryParse(ids, out var userId))
+        {
+            user = await context.Usuarios.FindAsync(userId, cancellationToken);
+            if (user is null)
+            {
+                log.LogCritical("RefreshAsync El usuario no existe. ClientId: {ClientId} {AgentUserId}", request.ClientId, code.AgentUserId);
+                return OAuthTokenServiceResult.Invalid("invalid_grant", "El usuario no existe.");
+            }
+        }
+        else
+        {
+            log.LogCritical("RefreshAsync El AgentUserId no es válido. ClientId: {ClientId} {AgentUserId}", request.ClientId, code.AgentUserId);
+            return OAuthTokenServiceResult.Invalid("invalid_grant", "El AgentUserId no es válido.");
+        }
+
+        var token = CreateToken(code.AgentUserId, user);
         code.IsUsed = true;
         context.OauthTokens.Add(token);
         await context.SaveChangesAsync(cancellationToken);
@@ -58,7 +80,7 @@ public sealed class OAuthTokenService(
     }
 
     public async Task<OAuthTokenServiceResult> RefreshAsync(
-        OAuthTokenRequest request,
+        OAuthTokenRequest request,        
         CancellationToken cancellationToken = default)
     {
         if (!IsValidClient(request.ClientId, request.ClientSecret))
@@ -83,7 +105,24 @@ public sealed class OAuthTokenService(
             return OAuthTokenServiceResult.Invalid("invalid_grant", "El refresh token no es válido.");
         }
 
-        var rotated = CreateToken(token.AgentUserId);
+        var ids = token.AgentUserId.Remove(0, "usr_master_pi_".Length);
+        Usuario? user;
+        if(int.TryParse(ids, out var userId))
+        {
+            user = await context.Usuarios.FindAsync( userId, cancellationToken);
+            if (user is null)
+            {
+                log.LogCritical("RefreshAsync El usuario no existe. ClientId: {ClientId} {AgentUserId}", request.ClientId, token.AgentUserId);
+                return OAuthTokenServiceResult.Invalid("invalid_grant", "El usuario no existe.");
+            }
+        }
+        else
+        {
+            log.LogCritical("RefreshAsync El AgentUserId no es válido. ClientId: {ClientId} {AgentUserId}", request.ClientId, token.AgentUserId);
+            return OAuthTokenServiceResult.Invalid("invalid_grant", "El AgentUserId no es válido.");
+        }        
+
+        var rotated = CreateToken(token.AgentUserId, user);
         token.AccessToken = rotated.AccessToken;
         token.RefreshToken = rotated.RefreshToken;
         token.AccessExpiresAt = rotated.AccessExpiresAt;
@@ -131,12 +170,12 @@ public sealed class OAuthTokenService(
         return oauthOptions.Value.AllowedRedirectUris.Contains(redirectUri, StringComparer.Ordinal);
     }
 
-    private OauthToken CreateToken(string agentUserId)
+    private OauthToken CreateToken(string agentUserId, Usuario user)
     {
         var lifetime = Math.Clamp(oauthOptions.Value.AccessTokenLifetimeSeconds, 60, 86400);
         return new OauthToken
         {
-            AccessToken = GenerateTokenValue(),
+            AccessToken = GenerateAccessToken(user),
             RefreshToken = GenerateTokenValue(),
             AgentUserId = agentUserId,
             AccessExpiresAt = DateTime.UtcNow.AddSeconds(lifetime)
@@ -160,6 +199,26 @@ public sealed class OAuthTokenService(
             .Replace('+', '-')
             .Replace('/', '_')
             .TrimEnd('=');
+    }
+
+    private string GenerateAccessToken(Usuario user)
+    {
+        var lifetime = Math.Clamp(oauthOptions.Value.AccessTokenLifetimeSeconds, 60, 86400);
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(jwtOptions.Value.SecretKey);
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim("sub", user.Id.ToString()) // El claim "sub" que usas en tu UsuariosController
+            }),
+            Expires = DateTime.UtcNow.AddMinutes(lifetime), // Corta duración
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
     }
 }
 
