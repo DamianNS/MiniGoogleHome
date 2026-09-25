@@ -10,12 +10,20 @@ http:
     type: json
     data: |-
       {
-        "RequestId":"1",
-        "Inputs":[
+        "RequestId": "14515786580954270871",
+        "Inputs": [
           {
-            "Intent":"action.devices.QUERY"  
+            "Intent": "action.devices.QUERY",
+            "Payload": {
+              "devices": [
+                {
+                  "id": "pi_media_speaker_001",
+                  "customData": {}
+                }
+              ],
+              "commands": []
+            }
           }
-          
         ]
       }
   auth: inherit

@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://mini:5010/oauth/token
+  url: "{{server}}/oauth/token"
   body:
     type: form-urlencoded
     data:
@@ -22,7 +22,7 @@ http:
         value: https://oauth-redirect.googleusercontent.com/r/asistentecoff
         disabled: true
       - name: refresh_token
-        value: _uvME8AAONMKTCcIbvV2jNU5m3Tm5NGAy7IIl1svKiM
+        value: spIf-uTKKFqPW2mBwtL8wN62HEIXtyvwKwC5BxBhsCs
   auth: inherit
 
 runtime:
