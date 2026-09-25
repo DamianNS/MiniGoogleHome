@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://localhost:5134/api/devices/1/user/1
+  url: "{{server}}/api/devices/1/user/1"
   auth: inherit
 
 settings:

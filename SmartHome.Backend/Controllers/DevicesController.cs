@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartHome.Shared.Entities;
@@ -8,6 +9,7 @@ namespace SmartHome.Backend.Controllers
 {
     [Route("api/devices")]
     [ApiController]
+    [Authorize]
     public class DevicesController(IDbContextFactory<SmartHomeDbContext> dbContextFactory) : ControllerBase
     {
         [HttpGet]

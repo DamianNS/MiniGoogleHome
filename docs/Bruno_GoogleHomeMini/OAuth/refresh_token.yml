@@ -1,0 +1,33 @@
+info:
+  name: refresh_token
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://mini:5010/oauth/token
+  body:
+    type: form-urlencoded
+    data:
+      - name: grant_type
+        value: refresh_token
+      - name: code
+        value: ""
+        disabled: true
+      - name: client_id
+        value: google-client
+      - name: client_secret
+        value: secret
+      - name: redirect_uri
+        value: https://oauth-redirect.googleusercontent.com/r/asistentecoff
+        disabled: true
+      - name: refresh_token
+        value: _a0WoLSDaCKPEnfM-yZturDuIAe_YqFIv3JPVdFhuzk
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

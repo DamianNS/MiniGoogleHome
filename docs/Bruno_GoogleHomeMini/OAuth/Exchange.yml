@@ -1,0 +1,32 @@
+info:
+  name: Exchange
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{server}}/oauth/token"
+  body:
+    type: form-urlencoded
+    data:
+      - name: grant_type
+        value: authorization_code
+      - name: code
+        value: Q2Apj9MJNPWO62oEKJ1tQymJzLq80p7pVj0-tMgC794
+      - name: client_id
+        value: google-client
+      - name: client_secret
+        value: secret
+      - name: redirect_uri
+        value: https://oauth-redirect.googleusercontent.com/r/asistentecoff
+      - name: refresh_token
+        value: ""
+        disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
