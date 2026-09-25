@@ -33,7 +33,7 @@ namespace SmartHome.Frontend.Components.Pages
                 var tokens = await context.OauthTokens
                     .AsNoTracking()
                     .Where(token => token.AccessExpiresAt > now)
-                    .OrderBy(token => token.AccessExpiresAt)
+                    .OrderByDescending(token => token.AccessExpiresAt)
                     .Select(token => new TokenRow(token.AgentUserId, token.AccessExpiresAt))
                     .ToListAsync();
                 ValidTokens.AddRange(tokens);
@@ -53,6 +53,7 @@ namespace SmartHome.Frontend.Components.Pages
 
                 var allTokens = await context.OauthTokens
                     .AsNoTracking()
+                    .OrderByDescending(token => token.AccessExpiresAt)
                     .ToListAsync();
                 AllTokens.AddRange(allTokens);
             }
