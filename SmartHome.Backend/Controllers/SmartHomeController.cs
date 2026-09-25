@@ -1,47 +1,72 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SmartHome.Backend.Services;
 using SmartHome.Shared.Contracts;
+using SmartHome.Shared.Persistence;
 using System.Security.Claims;
 
 namespace SmartHome.Backend.Controllers;
 
 [ApiController]
-//[Authorize(AuthenticationSchemes = "Bearer")]
+[Authorize]
 [Route("api/smarthome")]
-public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, ILogger<SmartHomeController> log) : ControllerBase
+public sealed class SmartHomeController(
+    MediaBridgeService mediaBridgeService, 
+    ILogger<SmartHomeController> log,
+    IDbContextFactory<SmartHomeDbContext> dbContextFactory) : ControllerBase
 {
     private const string DeviceId = "pi_media_speaker_01";
-        
-    //[ActivatorUtilitiesConstructor]
-    //public SmartHomeController(MediaBridgeService mediaBridgeService)
-    //{
-    //    this.mediaBridgeService = mediaBridgeService;
-    //}
+   
+    private async Task<Shared.Entities.Usuario?> GetUser()
+    {
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+        if (userIdClaim == null)
+        {
+            return null;
+        }
+        if(!int.TryParse(userIdClaim.Value, out var userId))
+        {
+            log.LogWarning("Invalid user ID claim value: {UserIdClaimValue}", userIdClaim.Value);
+            return null;
+        }
+        using var context = dbContextFactory.CreateDbContext();
+        var user = await context.Usuarios.Include(u => u.Minis).FirstOrDefaultAsync(u => u.Id == userId);
+        return user;
+    }
+
 
     [HttpPost]
     public async Task<IActionResult> Handle(
         [FromBody] GoogleHomeRequest request,
         CancellationToken cancellationToken)
     {
+        var user = await GetUser();
+        if (user == null) return NotFound("Usuario no encontrado.");
+
         log.LogInformation("Received request: {RequestId}, Intent: {Intent}", request.RequestId, request.Inputs.FirstOrDefault()?.Intent);
         var intent = request.Inputs.FirstOrDefault()?.Intent;
         return intent switch
         {
-            GoogleHomeIntents.Sync => Ok(CreateSyncResponse(request.RequestId)),
+            GoogleHomeIntents.Sync => Ok(await CreateSyncResponse(request.RequestId)),
             GoogleHomeIntents.Query => await QueryAsync(request, cancellationToken),
             GoogleHomeIntents.Execute => await ExecuteAsync(request, cancellationToken),
-            _ => BadRequest(new GoogleHomeErrorResponse
-            {
-                RequestId = request.RequestId,
-                Payload = new GoogleHomeErrorPayload
-                {
-                    ErrorCode = "unsupported_intent",
-                    ErrorMessage = "El intent todavía no está implementado."
-                }
-            })
+            _ => BadIntentResponse(request.RequestId)
         };
+    }
+
+    private IActionResult BadIntentResponse(string requestId)
+    {
+        log.LogWarning("Bad intent response for request: {RequestId}, Error", requestId);
+        return BadRequest(new GoogleHomeErrorResponse
+        {
+            RequestId = requestId,
+            Payload = new GoogleHomeErrorPayload
+            {
+                ErrorCode = "unsupported_intent",
+                ErrorMessage = "El intent todavía no está implementado."
+            }
+        });
     }
 
     private async Task<IActionResult> ExecuteAsync(
@@ -155,10 +180,50 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
         return Ok(ret);
     }
 
-    private GoogleHomeResponse CreateSyncResponse(string requestId)
+    private async Task<GoogleHomeResponse> CreateSyncResponse(string requestId)
     {
         log.LogInformation("Creating SYNC response for request: {RequestId}", requestId);
-        var agentUserId = User.FindFirstValue("agent_user_id") ?? string.Empty;
+        
+        using var context = dbContextFactory.CreateDbContext();
+        var user = await GetUser();
+        if(user is null)
+        {
+            log.LogWarning("User not found for SYNC response creation.");
+            throw new InvalidOperationException("User not found for SYNC response creation.");
+        }
+
+        var agentUserId = user.AgentUserId ?? throw new InvalidOperationException("AgentUserId is null for the user.");
+        var devices = user.Minis?.Select(d => new GoogleHomeDevice
+        {
+            Id = $"pi_media_speaker_{d.Id.ToString("0000")}",
+            Type = "action.devices.types.SPEAKER",
+            Traits = new List<string>
+            {
+                "action.devices.traits.MediaState",
+                "action.devices.traits.OnOff",
+                "action.devices.traits.TransportControl",
+                "action.devices.traits.Volume"
+            },
+            Name = new GoogleHomeDeviceName
+            {
+                Name = d.Nombre,
+                DefaultNames = new List<string> { d.Nombre },
+                Nicknames = new List<string> { d.Nombre }
+            },
+            WillReportState = false,
+            DeviceInfo = new GoogleHomeDeviceInfo
+            {
+                Manufacturer = "Niquel Soft",
+                Model = "PiMediaBridgeV1",
+                HwVersion = "Raspberry Pi",
+                SwVersion = "1.0.0"
+            },
+            Attributes = new GoogleHomeDeviceAttributes
+            {
+                volumeMaxLevel = 100,
+                volumeCanMuteAndUnmute = true
+            }
+        }).ToList();
 
         var ret = new GoogleHomeResponse
         {
@@ -166,39 +231,7 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
             Payload = new GoogleHomeResponsePayload
             {
                 AgentUserId = agentUserId,
-                Devices =
-                [
-                    new GoogleHomeDevice
-                    {
-                        Id = DeviceId,
-                        Type = "action.devices.types.SPEAKER",
-                        Traits =
-                        [
-                            "action.devices.traits.MediaState",
-                            "action.devices.traits.OnOff",
-                            "action.devices.traits.TransportControl",
-                            "action.devices.traits.Volume"
-                        ],
-                        Name = new GoogleHomeDeviceName
-                        {
-                            Name = "Parlante Raspberry",
-                            DefaultNames = ["Reproductor de la Pi"],
-                            Nicknames = ["Patoclo"]
-                        },
-                        WillReportState = false,
-                        DeviceInfo = new GoogleHomeDeviceInfo
-                        {
-                            Manufacturer = "Niquel Soft",
-                            Model = "PiMediaBridgeV1",
-                            HwVersion = "Raspberry Pi",
-                            SwVersion = "1.0.0"
-                        },
-                        Attributes = {
-                            volumeMaxLevel = 100,
-                            volumeCanMuteAndUnmute = true,
-                        }
-                    }
-                ],
+                Devices = devices ?? new List<GoogleHomeDevice>(),
                 Commands = null
             }
         };
