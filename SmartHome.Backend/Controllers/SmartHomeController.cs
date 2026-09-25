@@ -147,27 +147,57 @@ public sealed class SmartHomeController(
             .SelectMany(input => input.Payload.Devices)
             .ToList();
         var states = new Dictionary<string, GoogleHomeState>();
+
+        var user = await GetUser();
+        if (user == null) return Unauthorized(CreateError(request.RequestId, "401", "Usuario invalida"));
+
+        using var context = await dbContextFactory.CreateDbContextAsync();
+
         foreach (var reference in references)
         {
-            if (!string.Equals(reference.Id, DeviceId, StringComparison.Ordinal))
+            var ids = reference.Id.Remove(0, "pi_media_speaker_".Length);
+            if (!int.TryParse(ids, out int id)) {
+                log.LogInformation($"El dispositivo con ID {reference.Id} no es un entero.");
+                states[reference.Id] = new GoogleHomeState { Online = false };
+                continue;
+            }
+            var mini = context.Minis.Find(id);
+            if(mini == null)
             {
-                log.LogInformation($"El dispositivo con ID {reference.Id} no es soportado. Marcando como offline.");
+                log.LogInformation($"El dispositivo con ID {reference.Id} no esta en la base de datos.");
                 states[reference.Id] = new GoogleHomeState { Online = false };
                 continue;
             }
 
+            //if (!string.Equals(reference.Id, DeviceId, StringComparison.Ordinal))
+            //{
+            //    log.LogInformation($"El dispositivo con ID {reference.Id} no es soportado. Marcando como offline.");
+            //    states[reference.Id] = new GoogleHomeState { Online = false };
+            //    continue;
+            //}
+
             var currentVolume = mediaBridgeService is null
                 ? null
                 : await mediaBridgeService.GetCurrentVolumeAsync(cancellationToken);
-            states[DeviceId] = new GoogleHomeState
+
+            if (mini.Estado != Shared.Constantes.EstadoEnum.Off)
             {
-                Online = true,
-                CurrentVolume = currentVolume ?? 100,
-                PlaybackState = "PAUSED",
-                Status = "SUCCESS",
-                ActivityState = "IDLE",
-                On = true
-            };
+                states[reference.Id] = new GoogleHomeState
+                {
+                    Online = true,
+                    CurrentVolume = currentVolume ?? 100,
+                    PlaybackState = "PAUSED",
+                    Status = "SUCCESS",
+                    ActivityState = "IDLE",
+                    On = true
+                };
+            }
+            else {
+                states[reference.Id] = new GoogleHomeState
+                {
+                    Online = false
+                };
+            }            
         }
 
         var ret = new GoogleHomeQueryResponse
@@ -195,7 +225,7 @@ public sealed class SmartHomeController(
         var agentUserId = user.AgentUserId ?? throw new InvalidOperationException("AgentUserId is null for the user.");
         var devices = user.Minis?.Select(d => new GoogleHomeDevice
         {
-            Id = $"pi_media_speaker_{d.Id.ToString("0000")}",
+            Id = $"pi_media_speaker_{d.Id.ToString("00")}",
             Type = "action.devices.types.SPEAKER",
             Traits = new List<string>
             {

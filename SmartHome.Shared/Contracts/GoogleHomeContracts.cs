@@ -176,22 +176,22 @@ public sealed class GoogleHomeCommandResponse
 public sealed class GoogleHomeState
 {
     [JsonPropertyName("status")]
-    public string Status { get; set; } = "SUCCESS";
+    public string? Status { get; set; }
 
     [JsonPropertyName("playbackState")]
-    public string? PlaybackState { get; set; } = "PAUSED";
+    public string? PlaybackState { get; set; }
 
     [JsonPropertyName("currentVolume")]
-    public int? CurrentVolume { get; set; } = 50;
+    public int? CurrentVolume { get; set; }
 
     [JsonPropertyName("online")]
-    public bool? Online { get; set; } = true;
+    public bool Online { get; set; } = true;
 
     [JsonPropertyName("activityState")]
-    public string ActivityState { get; set; } = "IDLE";
+    public string? ActivityState { get; set; }
 
     [JsonPropertyName("on")]
-    public bool On { get; set; } = true;
+    public bool? On { get; set; }
 }
 
 public sealed class GoogleHomeErrorResponse
