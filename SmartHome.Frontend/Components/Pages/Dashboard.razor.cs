@@ -15,6 +15,9 @@ namespace SmartHome.Frontend.Components.Pages
         IHttpClientFactory HttpClientFactory { get; set; } = default!;
 
         private List<TokenRow> ValidTokens { get; } = [];
+
+        private List<OauthToken> AllTokens { get; } = [];
+
         private List<HistoryRow> History { get; } = [];
         private string BackendStatus { get; set; } = "No disponible";
         private int? CurrentVolume { get; set; }
@@ -47,6 +50,11 @@ namespace SmartHome.Frontend.Components.Pages
                     .AsNoTracking()
                     .ToListAsync();
                 Codes.AddRange(codes);
+
+                var allTokens = await context.OauthTokens
+                    .AsNoTracking()
+                    .ToListAsync();
+                AllTokens.AddRange(allTokens);
             }
             catch (Exception)
             {

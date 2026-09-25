@@ -145,3 +145,39 @@
         }
     </div>
 </section>
+
+<section class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h2 class="h5">All Tokens</h2>
+        @if (AllTokens == null || AllTokens.Count == 0)
+        {
+            <p class="text-secondary mb-0">Todavía no hay tokens registrados.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Fecha</th>
+                            <th>Agente</th>
+                            <th>Refresh Token</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in AllTokens)
+                        {
+                            <tr>
+                                <td>@item.Id</td>
+                                <td>@item.AccessExpiresAt.ToLocalTime().ToString("g")</td>
+                                <td>@item.AgentUserId</td>
+                                <td>@item.RefreshToken</td>                                
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>
