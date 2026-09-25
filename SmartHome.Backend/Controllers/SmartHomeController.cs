@@ -236,8 +236,8 @@ public sealed class SmartHomeController(
             },
             Name = new GoogleHomeDeviceName
             {
-                Name = d.Nombre,
-                DefaultNames = new List<string> { d.Nombre },
+                Name = "Perlante Rassberry",
+                DefaultNames = new List<string> { "Perlante Rassberry" },
                 Nicknames = new List<string> { d.Nombre }
             },
             WillReportState = false,
