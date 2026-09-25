@@ -32,14 +32,20 @@ public sealed class GoogleHomeInput
 
 public sealed class GoogleHomeInputPayload
 {
+    [JsonPropertyName("devices")]
     public List<GoogleHomeDeviceReference> Devices { get; set; } = [];
 
+    [JsonPropertyName("commands")]
     public List<GoogleHomeCommand> Commands { get; set; } = [];
 }
 
 public sealed class GoogleHomeDeviceReference
 {
+    [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("customData")]
+    public Dictionary<string, object> CustomData { get; set; } = new();
 }
 
 public sealed class GoogleHomeCommand
@@ -85,19 +91,22 @@ public sealed class GoogleHomeResponsePayload
     [JsonPropertyName("devices")]
     public List<GoogleHomeDevice> Devices { get; set; } = [];
 
-    //[JsonPropertyName("commands")]
-    //public List<GoogleHomeCommandResponse>? Commands { get; set; } = null;
+    [JsonPropertyName("commands")]
+    public List<GoogleHomeCommandResponse>? Commands { get; set; } = null;
 }
 
 public sealed class GoogleHomeQueryResponse
 {
+    [JsonPropertyName("requestId")]
     public string RequestId { get; set; } = string.Empty;
 
+    [JsonPropertyName("payload")]
     public GoogleHomeQueryPayload Payload { get; set; } = new();
 }
 
 public sealed class GoogleHomeQueryPayload
 {
+    [JsonPropertyName("devices")]
     public Dictionary<string, GoogleHomeState> Devices { get; set; } = [];
 }
 
@@ -166,14 +175,23 @@ public sealed class GoogleHomeCommandResponse
 
 public sealed class GoogleHomeState
 {
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = "SUCCESS";
+
     [JsonPropertyName("playbackState")]
-    public string? PlaybackState { get; set; }
+    public string? PlaybackState { get; set; } = "PAUSED";
 
     [JsonPropertyName("currentVolume")]
     public int? CurrentVolume { get; set; }
 
     [JsonPropertyName("online")]
-    public bool? Online { get; set; }
+    public bool? Online { get; set; } = true;
+
+    [JsonPropertyName("activityState")]
+    public string ActivityState { get; set; } = "IDLE";
+
+    [JsonPropertyName("on")]
+    public bool On { get; set; } = true;
 }
 
 public sealed class GoogleHomeErrorResponse

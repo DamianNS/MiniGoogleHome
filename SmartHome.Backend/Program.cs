@@ -16,6 +16,13 @@ public static class Program {
 
         // Add services to the container.
 
+        builder.Services.AddControllers()
+            .AddJsonOptions(o => o.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);
+        builder.Services.ConfigureHttpJsonOptions(o =>
+        {
+            o.SerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+        });
+
         builder.Services.AddControllers();
         builder.Services.AddSmartHomePersistence(builder.Configuration);
         builder.Services.AddScoped<OAuthTokenService>();

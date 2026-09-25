@@ -102,12 +102,13 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
             }
         }
 
-        return Ok();
-        //    new GoogleHomeResponse
-        //{
-        //    RequestId = request.RequestId,
-        //    Payload = new GoogleHomeResponsePayload { Commands = responses }
-        //});
+        var ret = new GoogleHomeResponse
+        {
+            RequestId = request.RequestId,
+            Payload = new GoogleHomeResponsePayload { Commands = responses }
+        };
+        log.LogInformation("Execution response for request: {RequestId}, Response: {Response}", request.RequestId, System.Text.Json.JsonSerializer.Serialize(ret));
+        return Ok(ret);        
     }
 
     private async Task<IActionResult> QueryAsync(
@@ -122,6 +123,7 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
         {
             if (!string.Equals(reference.Id, DeviceId, StringComparison.Ordinal))
             {
+                log.LogInformation($"El dispositivo con ID {reference.Id} no es soportado. Marcando como offline.");
                 states[reference.Id] = new GoogleHomeState { Online = false };
                 continue;
             }
@@ -132,15 +134,18 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
             states[DeviceId] = new GoogleHomeState
             {
                 Online = true,
-                CurrentVolume = currentVolume
+                CurrentVolume = currentVolume ?? 100
             };
         }
 
-        return Ok(new GoogleHomeQueryResponse
+        var ret = new GoogleHomeQueryResponse
         {
             RequestId = request.RequestId,
             Payload = new GoogleHomeQueryPayload { Devices = states }
-        });
+        };
+        var texto = System.Text.Json.JsonSerializer.Serialize(ret);
+        log.LogInformation($"Serialized result QueryAsync: {texto}");
+        return Ok(ret);
     }
 
     private GoogleHomeResponse CreateSyncResponse(string requestId)
@@ -163,6 +168,7 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
                         Traits =
                         [
                             "action.devices.traits.MediaState",
+                            "action.devices.traits.OnOff",
                             "action.devices.traits.TransportControl",
                             "action.devices.traits.Volume"
                         ],
@@ -170,19 +176,20 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
                         {
                             Name = "Parlante Raspberry",
                             DefaultNames = ["Reproductor de la Pi"],
-                            Nicknames = ["Audio de la Pi"]
+                            Nicknames = ["Patoclo"]
                         },
                         WillReportState = false,
                         DeviceInfo = new GoogleHomeDeviceInfo
                         {
-                            Manufacturer = "Niquelsoft",
+                            Manufacturer = "Niquel Soft",
                             Model = "PiMediaBridgeV1",
                             HwVersion = "Raspberry Pi",
                             SwVersion = "1.0.0"
                         },
                         
                     }
-                ]
+                ],
+                Commands = null
             }
         };
 
