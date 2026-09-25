@@ -1,16 +1,22 @@
 info:
-  name: Nuevo Device
+  name: QUERY
   type: http
   seq: 2
 
 http:
   method: POST
-  url: "{{server}}/api/devices"
+  url: "{{server}}/api/smarthome"
   body:
     type: json
     data: |-
       {
-        "Nombre": "Patoclo"
+        "RequestId":"1",
+        "Inputs":[
+          {
+            "Intent":"action.devices.QUERY"  
+          }
+          
+        ]
       }
   auth: inherit
 

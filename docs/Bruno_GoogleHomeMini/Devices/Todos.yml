@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://localhost:5134/api/devices
+  url: "{{server}}/api/devices"
   auth: inherit
 
 settings:

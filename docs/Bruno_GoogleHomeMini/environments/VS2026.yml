@@ -1,0 +1,8 @@
+name: VS2026
+variables:
+  - name: server
+    value: http://localhost:5134
+  - name: access_token
+    value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImRhbWlhbiIsInN1YiI6IjEiLCJuYmYiOjE3OTAzNTY4MTAsImV4cCI6MTc5MDU3MjgxMCwiaWF0IjoxNzkwMzU2ODEwfQ.7K48H3Qq8k6h8XPxUXXxa27E-lInAfh-_YLkwE_DHU8
+  - name: refresh_token
+    value: NS8x4uf8_YjhC7kMFj2R40v97eFrx158FddBLO9D69A

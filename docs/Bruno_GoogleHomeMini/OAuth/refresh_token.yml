@@ -22,8 +22,26 @@ http:
         value: https://oauth-redirect.googleusercontent.com/r/asistentecoff
         disabled: true
       - name: refresh_token
-        value: _a0WoLSDaCKPEnfM-yZturDuIAe_YqFIv3JPVdFhuzk
+        value: _uvME8AAONMKTCcIbvV2jNU5m3Tm5NGAy7IIl1svKiM
   auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.getStatus() === 200 && res.getBody()) {
+          const data = res.getBody();
+          
+          // Guardar el access_token en las variables de entorno
+          if (data.access_token) {
+            bru.setEnvVar("access_token", data.access_token);
+          }
+          
+          // Guardar también el refresh_token si lo necesitás
+          if (data.refresh_token) {
+            bru.setEnvVar("refresh_token", data.refresh_token);
+          }
+        }
 
 settings:
   encodeUrl: true

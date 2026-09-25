@@ -2,6 +2,22 @@ opencollection: 1.0.0
 
 info:
   name: GoogleHomeMini
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImRhbWlhbiIsInN1YiI6IjEiLCJuYmYiOjE3OTAzNTY4MTAsImV4cCI6MTc5MDU3MjgxMCwiaWF0IjoxNzkwMzU2ODEwfQ.7K48H3Qq8k6h8XPxUXXxa27E-lInAfh-_YLkwE_DHU8
 bundled: false
 extensions:
   bruno:
