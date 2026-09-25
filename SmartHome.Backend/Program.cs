@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using SmartHome.Backend.Authentication;
 using SmartHome.Backend.Configuration;
@@ -14,7 +15,9 @@ public static class Program {
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
+        builder.Services.AddDataProtection()
+                .PersistKeysToFileSystem(new DirectoryInfo(@"./data/dataAPIprotection"))
+                .SetApplicationName("SmartHomeAPI");
 
         builder.Services.AddControllers()
             .AddJsonOptions(o => o.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);

@@ -182,7 +182,7 @@ public sealed class GoogleHomeState
     public string? PlaybackState { get; set; } = "PAUSED";
 
     [JsonPropertyName("currentVolume")]
-    public int? CurrentVolume { get; set; }
+    public int? CurrentVolume { get; set; } = 50;
 
     [JsonPropertyName("online")]
     public bool? Online { get; set; } = true;

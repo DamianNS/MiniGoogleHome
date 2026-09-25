@@ -193,7 +193,10 @@ public sealed class SmartHomeController(MediaBridgeService mediaBridgeService, I
                             HwVersion = "Raspberry Pi",
                             SwVersion = "1.0.0"
                         },
-                        
+                        Attributes = {
+                            volumeMaxLevel = 100,
+                            volumeCanMuteAndUnmute = true,
+                        }
                     }
                 ],
                 Commands = null
