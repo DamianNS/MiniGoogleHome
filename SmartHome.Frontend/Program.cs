@@ -23,7 +23,8 @@ public static class Program
                 .SetApplicationName("SmartHomeApp");
 
         // Add services to the container.
-        builder.Services.AddRazorComponents();
+        builder.Services.AddRazorComponents()
+            .AddInteractiveServerComponents();
         builder.Services.AddSmartHomePersistence(builder.Configuration);
         builder.Services.AddScoped<AdminAuthenticationService>();
         builder.Services.AddScoped<AuthorizationCodeService>();
@@ -167,7 +168,8 @@ public static class Program
         });
 
         app.MapStaticAssets();
-        app.MapRazorComponents<App>();
+        app.MapRazorComponents<App>()
+            .AddInteractiveServerRenderMode();
 
         app.Run();
     }

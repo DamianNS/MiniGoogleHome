@@ -6,7 +6,9 @@ info:
 http:
   method: GET
   url: "{{server}}/api/devices"
-  auth: inherit
+  auth:
+    type: bearer
+    token: "{{access_token}}"
 
 settings:
   encodeUrl: true

@@ -1,8 +1,11 @@
 @page "/dashboard"
+@using SmartHome.Frontend.Components.Pages.Dispositivos
 
 <PageTitle>Dashboard</PageTitle>
 
 <h1 class="h2 mb-4">Dashboard</h1>
+
+<MinisIndexComponent />
 
 @if (LoadError is not null)
 {

@@ -22,7 +22,7 @@ http:
         value: https://oauth-redirect.googleusercontent.com/r/asistentecoff
         disabled: true
       - name: refresh_token
-        value: spIf-uTKKFqPW2mBwtL8wN62HEIXtyvwKwC5BxBhsCs
+        value: NS8x4uf8_YjhC7kMFj2R40v97eFrx158FddBLO9D69A
   auth: inherit
 
 runtime:

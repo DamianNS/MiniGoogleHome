@@ -24,6 +24,7 @@ namespace SmartHome.Backend.Controllers
                    device.Id,
                    device.Nombre,
                    device.Estado,
+                   device.Data,
                    Usuarios = device.Usuarios.Select(u => new
                    {
                        u.Id,
@@ -44,6 +45,12 @@ namespace SmartHome.Backend.Controllers
             {
                 return NotFound();
             }
+
+            // aca agregar los usuario de "device"
+            await context.Entry(device)
+                .Collection(m => m.Usuarios) // Reemplaza "Usuarios" por el nombre exacto de la propiedad en tu clase Mini
+                .LoadAsync();
+
             return Ok(device);
         }
 

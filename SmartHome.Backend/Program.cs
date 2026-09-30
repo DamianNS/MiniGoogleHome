@@ -22,15 +22,13 @@ public static class Program {
         builder.Services.AddDataProtection()
                 .PersistKeysToFileSystem(new DirectoryInfo(@"./data/dataAPIprotection"))
                 .SetApplicationName("SmartHomeAPI");
-
+        
         builder.Services.AddControllers()
-            .AddJsonOptions(o => o.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);
-        builder.Services.ConfigureHttpJsonOptions(o =>
-        {
-            o.SerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
-        });
-
-        builder.Services.AddControllers();
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+            });
         builder.Services.AddSmartHomePersistence(builder.Configuration);
         builder.Services.AddScoped<OAuthTokenService>();
         builder.Services.AddScoped<MediaBridgeService>();
