@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Backend.Contracts;
 using SmartHome.Backend.Services;
+using SmartHome.Shared.Request;
 using System.Text.Json.Serialization;
 
 namespace SmartHome.Backend.Controllers;
@@ -43,5 +44,12 @@ public sealed class OAuthController(OAuthTokenService tokenService, ILogger<OAut
         return result.IsSuccess
             ? Ok(result.Response)
             : BadRequest(result.Error);
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> GetToken(LoginRequest login)
+    {
+        var result = await tokenService.GetTokenAsync(login.Usuario, login.Password);
+        return Ok(result);
     }
 }

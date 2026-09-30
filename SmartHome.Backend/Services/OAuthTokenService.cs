@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SmartHome.Backend.Contracts;
 using SmartHome.Shared.Configuration;
+using SmartHome.Shared.Contracts;
 using SmartHome.Shared.Entities;
 using SmartHome.Shared.Persistence;
 using System.IdentityModel.Tokens.Jwt;
@@ -18,6 +20,9 @@ public sealed class OAuthTokenService(
     ILogger<OAuthTokenService> log,
     IOptions<JwtOptions> jwtOptions)
 {
+
+    private readonly PasswordHasher<Usuario> passwordHasher = new();
+
     public async Task<OAuthTokenServiceResult> ExchangeAsync(
         OAuthTokenRequest request,
         CancellationToken cancellationToken = default)
@@ -219,6 +224,23 @@ public sealed class OAuthTokenService(
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
+    }
+
+    internal async Task<OAuthTokenResponse> GetTokenAsync(string usuario, string password, CancellationToken cancellationToken = default)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var user = await context.Usuarios.FirstOrDefaultAsync(u => u.Username == usuario, cancellationToken);
+        if (user == null)
+        {
+            throw new InvalidOperationException("Invalid username");
+        }
+        var result2 = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+        if(result2 == PasswordVerificationResult.Failed)
+        {
+            throw new InvalidOperationException("Invalid password");
+        }
+        var token = CreateToken(user.AgentUserId, user);
+        return CreateResponse(token);
     }
 }
 
