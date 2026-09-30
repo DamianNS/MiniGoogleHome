@@ -4,11 +4,8 @@ using System.Text;
 
 namespace SmartHome.Shared.Constantes
 {
-    public enum EstadoEnum : byte
+    public static class Constantes
     {
-        Off = 0,
-        On = 1,
-        Error = 2,
-        Play = 3,
+        public const string JwtClaimName = "backendtoken";
     }
 }
