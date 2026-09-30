@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using SmartHome.Frontend.Components;
+using SmartHome.Frontend.Handlers;
 using SmartHome.Frontend.Services;
 using SmartHome.Shared.Configuration;
+using SmartHome.Shared.Constantes;
 using SmartHome.Shared.Persistence;
 using System.Security.Claims;
 
@@ -29,10 +31,10 @@ public static class Program
         builder.Services.AddScoped<AdminAuthenticationService>();
         builder.Services.AddScoped<AuthorizationCodeService>();
         builder.Services.AddHttpClient("Backend", client =>
-        {
-            client.BaseAddress = new Uri(
-                builder.Configuration["Backend:BaseUrl"] ?? "http://localhost:5000/");
-        });
+            {
+                client.BaseAddress = new Uri(
+                    builder.Configuration["Backend:BaseUrl"] ?? "http://localhost:5000/");
+            }).AddHttpMessageHandler<JwtAuthorizationHandler>();;
         builder.Services.AddCascadingAuthenticationState();
         builder.Services.Configure<OAuthOptions>(builder.Configuration.GetSection("OAuth"));
         builder.Services
@@ -48,6 +50,19 @@ public static class Program
                 options.SlidingExpiration = true;
             });
         builder.Services.AddAuthorization();
+
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddDistributedMemoryCache(); // Almacenamiento en RAM del servidor
+        builder.Services.AddSession(options =>
+        {
+            options.IdleTimeout = TimeSpan.FromHours(1);
+            options.Cookie.HttpOnly = true;
+            options.Cookie.IsEssential = true;
+        });
+
+        // Mis servicios
+        builder.Services.AddScoped<ApiService>();
+        builder.Services.AddTransient<JwtAuthorizationHandler>();
 
         var app = builder.Build();
 
@@ -68,6 +83,8 @@ public static class Program
         app.MapPost("/loginPost", async (
             HttpContext httpContext,
             AdminAuthenticationService authenticationService,
+            IHttpContextAccessor httpContextAccessor,
+            ApiService api,
             CancellationToken cancellationToken) =>
             {
                 var form = await httpContext.Request.ReadFormAsync(cancellationToken);
@@ -81,11 +98,18 @@ public static class Program
                     return Results.Redirect($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}&error=invalid");
                 }
 
+                // Obtengo el token de acceso del usuario autenticado
+                var ret = await api.GetTokenAsync(username, password);
+
+                httpContextAccessor?.HttpContext?.Session.SetString(Constantes.JwtClaimName, ret.AccessToken);
+
                 var claims = new[]
                 {
                     new Claim(ClaimTypes.Name, user.Username),
-                    new Claim("agent_user_id", user.AgentUserId)
+                    new Claim("agent_user_id", user.AgentUserId),
+                    new Claim(Constantes.JwtClaimName, ret.AccessToken)
                 };
+                
                 var principal = new ClaimsPrincipal(new ClaimsIdentity(
                     claims,
                     CookieAuthenticationDefaults.AuthenticationScheme));
@@ -95,7 +119,8 @@ public static class Program
 
                 var safeReturnUrl = returnUrl.StartsWith('/') && !returnUrl.StartsWith("//")
                     ? returnUrl
-                    : "/dashboard";
+                    : "/dashboard";                
+
                 return Results.Redirect(safeReturnUrl);
             });
 
@@ -170,6 +195,8 @@ public static class Program
         app.MapStaticAssets();
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
+
+        app.UseSession();
 
         app.Run();
     }
