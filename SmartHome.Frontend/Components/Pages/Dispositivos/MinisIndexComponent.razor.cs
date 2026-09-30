@@ -11,7 +11,7 @@ public partial class MinisIndexComponent : ComponentBase
     [Inject]
     private IDbContextFactory<SmartHomeDbContext> DbContextFactory { get; set; } = default!;
 
-    private List<MiniDTO>? DevicesData { get; set; }
+    private List<MiniDTO>? DevicesData { get; set; } = null;
 
     protected override Task OnAfterRenderAsync(bool firstRender)
     {
