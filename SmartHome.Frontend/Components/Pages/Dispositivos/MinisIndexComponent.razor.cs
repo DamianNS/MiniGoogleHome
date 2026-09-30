@@ -13,20 +13,35 @@ public partial class MinisIndexComponent : ComponentBase
 
     private List<MiniDTO>? DevicesData { get; set; } = null;
 
-    protected override Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             // Load the device data from the database
-            using var context = DbContextFactory.CreateDbContext();
-            var device = context.Minis.Include(m => m.Usuarios);
-            if (device != null)
-            {
-                this.DevicesData = device.ToList();
-                StateHasChanged();
-            }
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            var devices = await context.Minis.Include(m => m.Usuarios).ToListAsync();
+            this.DevicesData = devices;
+            StateHasChanged();
         }
-        return base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task ToggleDeviceStatus(MiniDTO device)
+    {
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        
+        context.Attach(device);
+        
+        if (device.Estado == SmartHome.Shared.Constantes.EstadoEnum.Off)
+        {
+            device.Estado = SmartHome.Shared.Constantes.EstadoEnum.On;
+        }
+        else
+        {
+            device.Estado = SmartHome.Shared.Constantes.EstadoEnum.Off;
+        }
+        
+        await context.SaveChangesAsync();
+        StateHasChanged();
     }
 }
 
