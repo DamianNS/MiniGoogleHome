@@ -1,3 +1,4 @@
+using SmartHome.Shared.Constantes;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -14,7 +15,7 @@ public static class GoogleHomeCommands
 {
     public const string MediaPlay = "action.devices.commands.mediaPlay";
     public const string SetVolume = "action.devices.commands.setVolume";
-    public const string RelativeVolume = "action.devices.commands.volumeRelative";
+    public const string RelativeVolume = "action.devices.commands.volumeRelative"; // este es valido
 
     
 }
@@ -239,10 +240,11 @@ public sealed class GoogleHomeDeviceAttributes
 
     [JsonPropertyName("transportControlSupportedCommands")]
     public List<string> transportControlSupportedCommands { get; set; } = [
-        "NEXT",
-        "PAUSE",
-        "PREVIOUS",
-        "STOP",
-        "RESUME"
+        //TransportControlSupportedCommands.CAPTION_CONTROL,
+        TransportControlSupportedCommands.NEXT,
+        TransportControlSupportedCommands.PAUSE,
+        TransportControlSupportedCommands.PREVIOUS,
+        TransportControlSupportedCommands.STOP,
+        TransportControlSupportedCommands.RESUME
         ];
 }
