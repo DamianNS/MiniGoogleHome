@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# Carpetas de compilación y artefactos de .NET
+bin/
+obj/
+TestResults/
+*.TestResults
+
+# Archivos de la base de datos local (evita que se copie el smarthome.db al contenedor)
+data/
+datos/
+
+# Herramientas y configuraciones de IDEs
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.slnx.user
+
+# Archivos de entorno y logs
+*.env
+*.log
+
+# Scripts o configuraciones locales que no se necesitan en el contenedor
+deploy/
+pod-minigooglehome.yaml
+docker-compose.yaml
+
+docs/
+README.md
+SmartHome.Backend/Dockerfile
+SmartHome.Backend.Tests/
+SmartHome.Frontend.Tests/
+SmartHome.Shared.Tests/
+AGENT.md
+Especificacion_SmartHome_MediaBridge.md
+LICENSE
+SmartHome.slnx
+tareas.md
