@@ -39,13 +39,13 @@ spec:
         - name: Database__ApplyMigrations
           value: true
         - name: InitialAdmin__Username
-          value: damian
+          value: admin
         - name: InitialAdmin__Password
-          value: dummy
+          value: 1234
         - name: OAuth__ClientSecret
-          value: "secret"
+          value: "secreto"
         - name: JwtOptions__SecretKey
-          value: "TU_LLAVE_SUPER_SECRETA_Y_LARGA_DE_MINIMO_32_CARACTERES2"
+          value: "TU_LLAVE_SUPER_SECRETA_Y_LARGA_DE_MINIMO_32_CARACTERES"
         - name: PULSE_SERVER
           value: "unix:/tmp/pulse-socket"
       volumeMounts:
@@ -77,8 +77,7 @@ spec:
           value: "http://+:5011"
         - name: ConnectionStrings__SharedDatabase
           value: "Data Source=/app/data/smarthome.db"
-        # ¡CAMBIO CLAVE!: Al compartir el Pod, el backend está en localhost
         - name: Backend__BaseUrl
           value: "http://localhost:5010"
         - name: OAuth__ClientSecret
-          value: "secret"
+          value: "secreto"
