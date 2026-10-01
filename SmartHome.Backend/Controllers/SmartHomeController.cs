@@ -128,6 +128,17 @@ public sealed class SmartHomeController(
                             }
                             : CreateCommandError(ids, result.Error ?? "No se pudo ajustar el volumen."));
                     }
+                    else if (string.Equals(execution.Command, GoogleHomeCommands.RelativeVolume, StringComparison.Ordinal))
+                    {
+                        var relativeSteps = execution.Params.RelativeSteps ?? 0;
+                        var nuevoVolumen = await mediaBridgeService.SetRelativeVolumeAsync(relativeSteps, cancellationToken);
+                        responses.Add(new GoogleHomeCommandResponse
+                        {
+                            Ids = ids,
+                            Status = "SUCCESS",
+                            States = new GoogleHomeState { CurrentVolume = nuevoVolumen }
+                        });
+                    }                    
                     else
                     {
                         responses.Add(CreateCommandError(ids, "Comando no soportado."));

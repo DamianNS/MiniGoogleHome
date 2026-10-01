@@ -22,8 +22,19 @@ public sealed class LinuxVolumeController(
     {
         if (volumeLevel is < 0 or > 100)
         {
-            return new AudioOperationResult(false, "El volumen debe estar entre 0 y 100.");
+            Console.WriteLine($"El volumen {volumeLevel} está fuera del rango permitido (0-100).");
+            if(volumeLevel < 0)
+            {
+                volumeLevel = 0;
+            }
+            if(volumeLevel > 100)
+            {
+                volumeLevel = 100;
+            }
+            //return new AudioOperationResult(false, "El volumen debe estar entre 0 y 100.");
         }
+
+        return new AudioOperationResult(true);
 
         try
         {

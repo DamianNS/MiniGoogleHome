@@ -14,6 +14,9 @@ public static class GoogleHomeCommands
 {
     public const string MediaPlay = "action.devices.commands.mediaPlay";
     public const string SetVolume = "action.devices.commands.setVolume";
+    public const string RelativeVolume = "action.devices.commands.volumeRelative";
+
+    
 }
 
 public sealed class GoogleHomeRequest
@@ -67,6 +70,9 @@ public sealed class GoogleHomeCommandParameters
     public GoogleHomeMediaQuery? MediaQuery { get; set; }
 
     public int? VolumeLevel { get; set; }
+
+    [JsonPropertyName("relativeSteps")]
+    public int? RelativeSteps { get; set; }
 }
 
 public sealed class GoogleHomeMediaQuery
