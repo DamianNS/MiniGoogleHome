@@ -41,6 +41,9 @@ public sealed class SmartHomeController(
         [FromBody] GoogleHomeRequest request,
         CancellationToken cancellationToken)
     {
+
+
+
         var user = await GetUser();
         if (user == null) return NotFound("Usuario no encontrado.");
 
@@ -73,6 +76,9 @@ public sealed class SmartHomeController(
         GoogleHomeRequest request,
         CancellationToken cancellationToken)
     {
+        var textorequest = System.Text.Json.JsonSerializer.Serialize(request);
+        log.LogInformation($"Serialized textorequest ExecuteAsync: {textorequest}");
+
         log.LogInformation("Executing commands for request: {RequestId}", request.RequestId);
         if (mediaBridgeService is null || request.Inputs.Count == 0)
         {
