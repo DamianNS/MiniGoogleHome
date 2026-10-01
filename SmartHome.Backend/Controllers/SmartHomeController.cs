@@ -146,15 +146,9 @@ public sealed class SmartHomeController(
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error executing commands: {ex.ToString()}");
-            var responses = new List<GoogleHomeCommandResponse>();
-            responses.Add(CreateCommandError(ids, "Error interno."));
-            var ret = new GoogleHomeResponse
-            {
-                RequestId = request.RequestId,
-                Payload = new GoogleHomeResponsePayload { Commands = responses }
-            };
-            log.LogInformation("Execution response for request: {RequestId}, Response: {Response}", request.RequestId, System.Text.Json.JsonSerializer.Serialize(ret));
-            return Ok(ret);
+            var errRwet = CreateError(request.RequestId, "99", "Error interno");
+            log.LogInformation("Execution Error: {RequestId}, Response: {Response}", request.RequestId, System.Text.Json.JsonSerializer.Serialize(errRwet));
+            return Ok(errRwet);
         }        
     }
 
