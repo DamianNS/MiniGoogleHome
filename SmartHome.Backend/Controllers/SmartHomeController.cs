@@ -41,8 +41,8 @@ public sealed class SmartHomeController(
         [FromBody] GoogleHomeRequest request,
         CancellationToken cancellationToken)
     {
-
-
+        var textorequest = System.Text.Json.JsonSerializer.Serialize(request);
+        log.LogInformation($"api/smarthome request: {textorequest}");
 
         var user = await GetUser();
         if (user == null) return NotFound("Usuario no encontrado.");
@@ -76,70 +76,86 @@ public sealed class SmartHomeController(
         GoogleHomeRequest request,
         CancellationToken cancellationToken)
     {
-        var textorequest = System.Text.Json.JsonSerializer.Serialize(request);
-        log.LogInformation($"Serialized textorequest ExecuteAsync: {textorequest}");
-
-        log.LogInformation("Executing commands for request: {RequestId}", request.RequestId);
-        if (mediaBridgeService is null || request.Inputs.Count == 0)
+        try
         {
-            log.LogCritical("MediaBridgeService is not initialized or request inputs are empty for request: {RequestId}", request.RequestId);
-            return BadRequest(CreateError(request.RequestId, "invalid_request", "El payload EXECUTE no es válido."));
-        }
+            var textorequest = System.Text.Json.JsonSerializer.Serialize(request);
+            log.LogInformation($"Serialized textorequest ExecuteAsync: {textorequest}");
 
-        var responses = new List<GoogleHomeCommandResponse>();
-        foreach (var command in request.Inputs.SelectMany(input => input.Payload.Commands))
-        {
-            var ids = command.Devices.Select(device => device.Id).ToList();
-            if (ids.Count == 0 || ids.Any(id => !string.Equals(id, DeviceId, StringComparison.Ordinal)))
+            log.LogInformation("Executing commands for request: {RequestId}", request.RequestId);
+            if (mediaBridgeService is null || request.Inputs.Count == 0)
             {
-                responses.Add(CreateCommandError(ids, "Dispositivo no soportado."));
-                continue;
+                log.LogCritical("MediaBridgeService is not initialized or request inputs are empty for request: {RequestId}", request.RequestId);
+                return BadRequest(CreateError(request.RequestId, "invalid_request", "El payload EXECUTE no es válido."));
             }
 
-            foreach (var execution in command.Execution)
+            var responses = new List<GoogleHomeCommandResponse>();
+            foreach (var command in request.Inputs.SelectMany(input => input.Payload.Commands))
             {
-                if (string.Equals(execution.Command, GoogleHomeCommands.MediaPlay, StringComparison.Ordinal))
+                var ids = command.Devices.Select(device => device.Id).ToList();
+                if (ids.Count == 0 || ids.Any(id => !string.Equals(id, DeviceId, StringComparison.Ordinal)))
                 {
-                    var query = execution.Params.MediaQuery?.Query ?? string.Empty;
-                    var result = await mediaBridgeService.PlayAsync(query, cancellationToken);
-                    responses.Add(result.Succeeded
-                        ? new GoogleHomeCommandResponse
-                        {
-                            Ids = ids,
-                            Status = "SUCCESS",
-                            States = new GoogleHomeState { PlaybackState = "PLAYING" }
-                        }
-                        : CreateCommandError(ids, result.Error ?? "No se pudo iniciar la reproducción."));
+                    responses.Add(CreateCommandError(ids, "Dispositivo no soportado."));
+                    continue;
                 }
-                else if (string.Equals(execution.Command, GoogleHomeCommands.SetVolume, StringComparison.Ordinal))
+
+                foreach (var execution in command.Execution)
                 {
-                    var volumeLevel = execution.Params.VolumeLevel;
-                    var result = volumeLevel is null
-                        ? new MediaCommandResult(false, "El volumen no es válido.")
-                        : await mediaBridgeService.SetVolumeAsync(volumeLevel.Value, cancellationToken);
-                    responses.Add(result.Succeeded
-                        ? new GoogleHomeCommandResponse
-                        {
-                            Ids = ids,
-                            Status = "SUCCESS",
-                            States = new GoogleHomeState { CurrentVolume = volumeLevel }
-                        }
-                        : CreateCommandError(ids, result.Error ?? "No se pudo ajustar el volumen."));
-                }
-                else
-                {
-                    responses.Add(CreateCommandError(ids, "Comando no soportado."));
+                    if (string.Equals(execution.Command, GoogleHomeCommands.MediaPlay, StringComparison.Ordinal))
+                    {
+                        var query = execution.Params.MediaQuery?.Query ?? string.Empty;
+                        var result = await mediaBridgeService.PlayAsync(query, cancellationToken);
+                        responses.Add(result.Succeeded
+                            ? new GoogleHomeCommandResponse
+                            {
+                                Ids = ids,
+                                Status = "SUCCESS",
+                                States = new GoogleHomeState { PlaybackState = "PLAYING" }
+                            }
+                            : CreateCommandError(ids, result.Error ?? "No se pudo iniciar la reproducción."));
+                    }
+                    else if (string.Equals(execution.Command, GoogleHomeCommands.SetVolume, StringComparison.Ordinal))
+                    {
+                        var volumeLevel = execution.Params.VolumeLevel;
+                        var result = volumeLevel is null
+                            ? new MediaCommandResult(false, "El volumen no es válido.")
+                            : await mediaBridgeService.SetVolumeAsync(volumeLevel.Value, cancellationToken);
+                        responses.Add(result.Succeeded
+                            ? new GoogleHomeCommandResponse
+                            {
+                                Ids = ids,
+                                Status = "SUCCESS",
+                                States = new GoogleHomeState { CurrentVolume = volumeLevel }
+                            }
+                            : CreateCommandError(ids, result.Error ?? "No se pudo ajustar el volumen."));
+                    }
+                    else
+                    {
+                        responses.Add(CreateCommandError(ids, "Comando no soportado."));
+                    }
                 }
             }
-        }
 
-        var ret = new GoogleHomeResponse
+            var ret = new GoogleHomeResponse
+            {
+                RequestId = request.RequestId,
+                Payload = new GoogleHomeResponsePayload { Commands = responses }
+            };
+            log.LogInformation("Execution response for request: {RequestId}, Response: {Response}", request.RequestId, System.Text.Json.JsonSerializer.Serialize(ret));
+            return Ok(ret);
+        }
+        catch (Exception ex)
         {
-            RequestId = request.RequestId,
-            Payload = new GoogleHomeResponsePayload { Commands = responses }
-        };
-        log.LogInformation("Execution response for request: {RequestId}, Response: {Response}", request.RequestId, System.Text.Json.JsonSerializer.Serialize(ret));
-        return Ok(ret);        
+            Console.Error.WriteLine($"Error executing commands: {ex.ToString()}");
+            var responses = new List<GoogleHomeCommandResponse>();
+            responses.Add(CreateCommandError(ids, "Error interno."));
+            var ret = new GoogleHomeResponse
+            {
+                RequestId = request.RequestId,
+                Payload = new GoogleHomeResponsePayload { Commands = responses }
+            };
+            log.LogInformation("Execution response for request: {RequestId}, Response: {Response}", request.RequestId, System.Text.Json.JsonSerializer.Serialize(ret));
+            return Ok(ret);
+        }        
     }
 
     private async Task<IActionResult> QueryAsync(
