@@ -209,13 +209,21 @@ public sealed class SmartHomeController(
 
             if (mini.Estado != Shared.Constantes.EstadoEnum.Off)
             {
+
+                var playbackState = mini.Estado switch
+                {
+                    Shared.Constantes.EstadoEnum.Play => Shared.Constantes.PlaybackState.PLAYING,
+                    Shared.Constantes.EstadoEnum.On => Shared.Constantes.PlaybackState.PAUSED,
+                    _ => Shared.Constantes.PlaybackState.STOPPED
+                };
+
                 states[reference.Id] = new GoogleHomeState
                 {
                     Online = true,
                     CurrentVolume = currentVolume ?? 100,
-                    PlaybackState = "PAUSED",
+                    PlaybackState = playbackState,
                     Status = "SUCCESS",
-                    ActivityState = "IDLE",
+                    ActivityState = Shared.Constantes.ActivityState.ACTIVE,
                     On = true
                 };
             }

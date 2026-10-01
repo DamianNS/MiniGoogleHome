@@ -44,7 +44,7 @@ public sealed class MediaBridgeService(
         int volumeLevel,
         CancellationToken cancellationToken = default)
     {
-        var clampedVolumeLevel = await volumeController.GetCurrentAsync(cancellationToken) ?? 0;
+        var clampedVolumeLevel = await volumeController.GetCurrentAsync(cancellationToken) ?? 50;
         var nuevoVolumen = clampedVolumeLevel + volumeLevel;
         if(nuevoVolumen < 0)
         {
@@ -60,7 +60,7 @@ public sealed class MediaBridgeService(
 
     public Task<int?> GetCurrentVolumeAsync(CancellationToken cancellationToken = default)
     {
-        return volumeController.GetCurrentAsync(cancellationToken);
+        return volumeController.GetCurrentAsync(cancellationToken) ?? 50;
     }
 
     private async Task RecordHistoryAsync(

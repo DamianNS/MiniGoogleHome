@@ -9,6 +9,7 @@ using SmartHome.Backend.Configuration;
 using SmartHome.Backend.Services;
 using SmartHome.Shared.Configuration;
 using SmartHome.Shared.Persistence;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace SmartHome.Backend;
@@ -33,7 +34,14 @@ public static class Program {
         builder.Services.AddScoped<OAuthTokenService>();
         builder.Services.AddScoped<MediaBridgeService>();
         builder.Services.AddSingleton<IExternalProcessRunner, SystemExternalProcessRunner>();
-        builder.Services.AddSingleton<IAudioPlayer, LinuxAudioPlayer>();
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) { 
+            
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            builder.Services.AddSingleton<IAudioPlayer, LinuxAudioPlayer>();
+        }
         builder.Services.AddSingleton<IVolumeController, LinuxVolumeController>();
         builder.Services.Configure<OAuthOptions>(builder.Configuration.GetSection("OAuth"));
         builder.Services.Configure<AudioOptions>(builder.Configuration.GetSection("Audio"));
