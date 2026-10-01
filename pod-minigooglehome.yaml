@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: minigooglehome-pod
+  labels:
+    app: minigooglehome
+  annotations:
+    # Podman lee esta anotación para mapear dispositivos físicos del host al contenedor
+    io.podman.annotations.devices: "/dev/snd"
+spec:
+  securityContext:
+    # 29 es el ID estándar del grupo "audio" en Debian/Raspbian/Ubuntu
+    supplementalGroups: [29]
+  volumes:
+    - name: datos-sqlite
+      hostPath:
+        path: /home/coff/docker/SmartHome/datos # Carpeta local en tu Raspberry Pi
+        type: DirectoryOrCreate
+    - name: pulse-socket
+      hostPath:
+        path: /run/user/1000/pulse/native
+  containers:
+    # 1. El Backend (Web API REST / OAuth)
+    - name: smarthome-backend
+      image: docker.io/damianns1/smarthome-backend:latest
+      imagePullPolicy: Never
+      ports:
+        - containerPort: 5010
+          hostPort: 5010 # Expone el puerto de la API al exterior
+      env:
+        - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+          value: "true"
+        - name: HTTP_PORTS
+          value: "5010"
+        - name: ASPNETCORE_URLS
+          value: "http://+:5010" # Asegura el binding de puertos en .NET
+        - name: ConnectionStrings__SharedDatabase
+          value: "Data Source=/app/data/smarthome.db"
+        - name: Database__ApplyMigrations
+          value: true
+        - name: InitialAdmin__Username
+          value: admin
+        - name: InitialAdmin__Password
+          value: 1234
+        - name: OAuth__ClientSecret
+          value: "secreto"
+        - name: JwtOptions__SecretKey
+          value: "TU_LLAVE_SUPER_SECRETA_Y_LARGA_DE_MINIMO_32_CARACTERES"
+        - name: PULSE_SERVER
+          value: "unix:/tmp/pulse-socket"
+      volumeMounts:
+        - name: datos-sqlite
+          mountPath: /app/data
+        - name: pulse-socket
+          mountPath: /tmp/pulse-socket
+      securityContext:
+        allowPrivilegeEscalation: false
+
+    # 2. El Frontend (Blazor SSR + Bootstrap 5)
+    - name: smarthome-frontend
+      image: docker.io/damianns1/smarthome-frontend:latest
+      imagePullPolicy: Never
+      ports:
+        - containerPort: 5011
+          hostPort: 5011 # Expone el puerto de Blazor al exterior
+      volumeMounts:
+        - name: datos-sqlite
+          mountPath: /app/data
+      securityContext:
+        allowPrivilegeEscalation: false
+      env:
+        - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+          value: "true"
+        - name: HTTP_PORTS
+          value: "5011"
+        - name: ASPNETCORE_URLS
+          value: "http://+:5011"
+        - name: ConnectionStrings__SharedDatabase
+          value: "Data Source=/app/data/smarthome.db"
+        - name: Backend__BaseUrl
+          value: "http://localhost:5010"
+        - name: OAuth__ClientSecret
+          value: "secreto"

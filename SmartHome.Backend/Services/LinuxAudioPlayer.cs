@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 using SmartHome.Backend.Configuration;
 using System.Diagnostics;
 
@@ -30,6 +30,7 @@ public sealed class LinuxAudioPlayer(
                 //["--no-video", $"ytsearch:{query}"],
                 [
                     "--no-video",
+                    "--really-quiet",
                     "--input-ipc-server=/tmp/mpv-socket",
                     "https://playerservices.streamtheworld.com/api/livestream-redirect/UNOAAC.aac"
                 ],
