@@ -17,7 +17,11 @@ public static class GoogleHomeCommands
     public const string SetVolume = "action.devices.commands.setVolume";
     public const string RelativeVolume = "action.devices.commands.volumeRelative"; // este es valido
 
+    public const string MediaResume = "action.devices.commands.mediaResume";
+
     
+
+
 }
 
 public sealed class GoogleHomeRequest

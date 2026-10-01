@@ -35,8 +35,8 @@ public static class Program {
         builder.Services.AddScoped<MediaBridgeService>();
         builder.Services.AddSingleton<IExternalProcessRunner, SystemExternalProcessRunner>();
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) { 
-            
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            builder.Services.AddSingleton<IAudioPlayer, WindowsAudioPlayer>();
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
