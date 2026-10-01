@@ -1,8 +1,23 @@
 <div class="card mini-player shadow-sm my-2">
     <div class="card-body p-2 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3">
         
-        <div class="device-info text-truncate text-center text-sm-start" title="@DeviceData?.Nombre">
-            <h6 class="mb-0 text-truncate fw-bold">@(DeviceData?.Nombre ?? "Cargando...")</h6>
+        <div class="device-info text-center text-sm-start d-flex align-items-center gap-1" title="@DeviceData?.Nombre">
+            @if (isEditingName)
+            {
+                <input type="text" class="form-control form-control-sm" @bind="editNameValue" @bind:event="oninput" @onkeyup="@(e => { if (e.Key == "Enter") SaveName(); else if (e.Key == "Escape") CancelEditing(); })" />
+                <button class="btn btn-sm btn-success p-1" @onclick="SaveName"><i class="bi bi-check"></i></button>
+                <button class="btn btn-sm btn-danger p-1" @onclick="CancelEditing"><i class="bi bi-x"></i></button>
+            }
+            else
+            {
+                <h6 class="mb-0 text-truncate fw-bold">@(DeviceData?.Nombre ?? "Cargando...")</h6>
+                @if (DeviceData != null)
+                {
+                    <button class="btn btn-sm btn-link text-secondary p-0 ms-1" @onclick="StartEditing" title="Editar nombre">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                }
+            }
         </div>
 
         <fieldset disabled="@(DeviceData == null)" class="border-0 p-0 m-0">
