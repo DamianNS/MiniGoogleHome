@@ -220,7 +220,7 @@ public sealed class SmartHomeController(
                 states[reference.Id] = new GoogleHomeState
                 {
                     Online = true,
-                    CurrentVolume = currentVolume ?? 100,
+                    CurrentVolume = currentVolume ?? 50,
                     PlaybackState = playbackState,
                     Status = "SUCCESS",
                     ActivityState = Shared.Constantes.ActivityState.ACTIVE,

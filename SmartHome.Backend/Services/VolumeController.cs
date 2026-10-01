@@ -36,21 +36,21 @@ public sealed class LinuxVolumeController(
 
         return new AudioOperationResult(true);
 
-        try
-        {
-            var result = await processRunner.RunAsync(
-                audioOptions.Value.AmixerPath,
-                ["set", audioOptions.Value.MixerName, $"{volumeLevel}%"],
-                cancellationToken);
-            return result.ExitCode == 0
-                ? new AudioOperationResult(true)
-                : new AudioOperationResult(false, "amixer devolvió un error.");
-        }
-        catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
-        {
-            logger.LogWarning("No se pudo ajustar el volumen: {Error}", exception.Message);
-            return new AudioOperationResult(false, "No se pudo ajustar el volumen.");
-        }
+        //try
+        //{
+        //    var result = await processRunner.RunAsync(
+        //        audioOptions.Value.AmixerPath,
+        //        ["set", audioOptions.Value.MixerName, $"{volumeLevel}%"],
+        //        cancellationToken);
+        //    return result.ExitCode == 0
+        //        ? new AudioOperationResult(true)
+        //        : new AudioOperationResult(false, "amixer devolvió un error.");
+        //}
+        //catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
+        //{
+        //    logger.LogWarning("No se pudo ajustar el volumen: {Error}", exception.Message);
+        //    return new AudioOperationResult(false, "No se pudo ajustar el volumen.");
+        //}
     }
 
     public async Task<int?> GetCurrentAsync(CancellationToken cancellationToken = default)

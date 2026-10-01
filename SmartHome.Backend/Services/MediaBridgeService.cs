@@ -60,7 +60,7 @@ public sealed class MediaBridgeService(
 
     public Task<int?> GetCurrentVolumeAsync(CancellationToken cancellationToken = default)
     {
-        return volumeController.GetCurrentAsync(cancellationToken) ?? 50;
+        return volumeController.GetCurrentAsync(cancellationToken);
     }
 
     private async Task RecordHistoryAsync(
