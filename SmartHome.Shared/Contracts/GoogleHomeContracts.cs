@@ -189,23 +189,23 @@ public sealed class GoogleHomeCommandResponse
 
 public sealed class GoogleHomeState
 {
-    [JsonPropertyName("status")]
-    public string? Status { get; set; }
+    // [JsonPropertyName("status")]
+    // public string? Status { get; set; } = StatusEnum.Online.ToString();
 
     [JsonPropertyName("playbackState")]
-    public string? PlaybackState { get; set; }
+    public string PlaybackState { get; set; } = Constantes.PlaybackState.STOPPED;
 
     [JsonPropertyName("currentVolume")]
-    public int? CurrentVolume { get; set; }
+    public int CurrentVolume { get; set; } = 50;
 
     [JsonPropertyName("online")]
     public bool Online { get; set; } = true;
 
     [JsonPropertyName("activityState")]
-    public string? ActivityState { get; set; }
+    public string ActivityState { get; set; } = Constantes.ActivityState.ACTIVE;
 
     [JsonPropertyName("on")]
-    public bool? On { get; set; }
+    public bool On { get; set; } = true;
 
     [JsonPropertyName("isMuted")]
     public bool IsMuted { get; set; } = false;

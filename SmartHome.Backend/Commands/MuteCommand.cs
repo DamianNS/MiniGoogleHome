@@ -23,7 +23,7 @@ public class MuteCommand(MediaBridgeService mediaBridgeService) : ICommandHome
         }
         else
         {
-            await mediaBridgeService.SetVolumeAsync(data.CurrentVolume ?? 50, cancellationToken);
+            await mediaBridgeService.SetVolumeAsync(data.CurrentVolume, cancellationToken);
         }
 
         data.IsMuted = mute;

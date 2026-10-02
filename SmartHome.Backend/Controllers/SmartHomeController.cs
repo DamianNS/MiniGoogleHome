@@ -206,7 +206,7 @@ public sealed class SmartHomeController(
                 : await mediaBridgeService.GetCurrentVolumeAsync(cancellationToken);
 
             //data.Online = true;
-            data.CurrentVolume = currentVolume ?? data.CurrentVolume ?? 100;
+            data.CurrentVolume = currentVolume ?? data.CurrentVolume;
 
             if (mini.Estado != Shared.Constantes.EstadoEnum.Off)
             {
