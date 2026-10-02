@@ -13,6 +13,8 @@ public sealed class SmartHomeDbContext(DbContextOptions<SmartHomeDbContext> opti
 
     public DbSet<HistorialReproduccion> HistorialReproducciones => Set<HistorialReproduccion>();
 
+    public DbSet<MiniDTO> Minis => Set<MiniDTO>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Usuario>(entity =>

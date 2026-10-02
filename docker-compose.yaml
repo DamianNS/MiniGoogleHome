@@ -1,8 +1,8 @@
 services:
   backend:
     build:
-      context: ../SmartHome.Backend  # Ruta hacia la carpeta de tu API
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: SmartHome.Backend/Dockerfile
     image: smarthome-backend:latest
     environment:
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
@@ -14,6 +14,10 @@ services:
       - "smarthomered"
     volumes:
       - ./datos:/app/data
+    devices:
+      - "/dev/snd:/dev/snd"
+    group_add:
+      - audio
     ports:
       - "5010:5010"
   frontend:

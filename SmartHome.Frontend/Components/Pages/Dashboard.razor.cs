@@ -15,6 +15,9 @@ namespace SmartHome.Frontend.Components.Pages
         IHttpClientFactory HttpClientFactory { get; set; } = default!;
 
         private List<TokenRow> ValidTokens { get; } = [];
+
+        private List<OauthToken> AllTokens { get; } = [];
+
         private List<HistoryRow> History { get; } = [];
         private string BackendStatus { get; set; } = "No disponible";
         private int? CurrentVolume { get; set; }
@@ -30,7 +33,7 @@ namespace SmartHome.Frontend.Components.Pages
                 var tokens = await context.OauthTokens
                     .AsNoTracking()
                     .Where(token => token.AccessExpiresAt > now)
-                    .OrderBy(token => token.AccessExpiresAt)
+                    .OrderByDescending(token => token.AccessExpiresAt)
                     .Select(token => new TokenRow(token.AgentUserId, token.AccessExpiresAt))
                     .ToListAsync();
                 ValidTokens.AddRange(tokens);
@@ -47,6 +50,12 @@ namespace SmartHome.Frontend.Components.Pages
                     .AsNoTracking()
                     .ToListAsync();
                 Codes.AddRange(codes);
+
+                var allTokens = await context.OauthTokens
+                    .AsNoTracking()
+                    .OrderByDescending(token => token.AccessExpiresAt)
+                    .ToListAsync();
+                AllTokens.AddRange(allTokens);
             }
             catch (Exception)
             {

@@ -1,0 +1,5 @@
+name: OnMini
+variables:
+  - name: server
+    value: http://mini:5010
+    description: ""

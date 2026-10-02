@@ -40,6 +40,24 @@ public sealed class MediaBridgeService(
         return new MediaCommandResult(result.Succeeded, result.Error);
     }
 
+    public async Task<int> SetRelativeVolumeAsync(
+        int volumeLevel,
+        CancellationToken cancellationToken = default)
+    {
+        var clampedVolumeLevel = await volumeController.GetCurrentAsync(cancellationToken) ?? 50;
+        var nuevoVolumen = clampedVolumeLevel + volumeLevel;
+        if(nuevoVolumen < 0)
+        {
+            nuevoVolumen = 0;
+        }
+        else if (nuevoVolumen > 100)
+        {
+            nuevoVolumen = 100;
+        }
+        var result = await volumeController.SetAsync(nuevoVolumen, cancellationToken);
+        return nuevoVolumen;
+    }
+
     public Task<int?> GetCurrentVolumeAsync(CancellationToken cancellationToken = default)
     {
         return volumeController.GetCurrentAsync(cancellationToken);

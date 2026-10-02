@@ -17,6 +17,21 @@ namespace SmartHome.Shared.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("MiniDTOUsuario", b =>
+                {
+                    b.Property<int>("MinisId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UsuariosId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("MinisId", "UsuariosId");
+
+                    b.HasIndex("UsuariosId");
+
+                    b.ToTable("MiniDTOUsuario");
+                });
+
             modelBuilder.Entity("SmartHome.Shared.Entities.HistorialReproduccion", b =>
                 {
                     b.Property<int>("Id")
@@ -39,6 +54,28 @@ namespace SmartHome.Shared.Migrations
                     b.HasIndex("Fecha");
 
                     b.ToTable("HistorialReproduccion", (string)null);
+                });
+
+            modelBuilder.Entity("SmartHome.Shared.Entities.MiniDTO", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Data")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte>("Estado")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(25)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("devices");
                 });
 
             modelBuilder.Entity("SmartHome.Shared.Entities.OauthCode", b =>
@@ -136,6 +173,21 @@ namespace SmartHome.Shared.Migrations
                         .IsUnique();
 
                     b.ToTable("Usuarios", (string)null);
+                });
+
+            modelBuilder.Entity("MiniDTOUsuario", b =>
+                {
+                    b.HasOne("SmartHome.Shared.Entities.MiniDTO", null)
+                        .WithMany()
+                        .HasForeignKey("MinisId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartHome.Shared.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuariosId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

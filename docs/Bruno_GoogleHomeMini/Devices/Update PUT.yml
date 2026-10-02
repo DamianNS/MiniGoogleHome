@@ -1,0 +1,25 @@
+info:
+  name: Update PUT
+  type: http
+  seq: 5
+
+http:
+  method: PUT
+  url: "{{server}}/api/devices/1"
+  body:
+    type: json
+    data: |-
+      {
+          "id": 1,
+          "nombre": "Nuevo1",
+          "estado": 0,
+          "data": "hola"
+        }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

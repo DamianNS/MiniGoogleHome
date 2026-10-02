@@ -1,0 +1,50 @@
+@rendermode InteractiveServer
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h5">Dispositivos</h2>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Dispositivo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (DevicesData == null || DevicesData.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="2">
+                                <p class="text-secondary mb-0">No hay dispositivos activos.</p>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var device in DevicesData)
+                        {
+                            <tr>
+                                <td><MiniDeviceCtl DeviceId="@device.Id" /></td>
+                                <td>
+                                    @if (device.Estado == SmartHome.Shared.Constantes.EstadoEnum.Off)
+                                    {
+                                        <button class="btn btn-sm btn-outline-success" title="Activar" @onclick="() => ToggleDeviceStatus(device)">
+                                            <i class="bi bi-play-circle"></i> Activar
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger" title="Desactivar" @onclick="() => ToggleDeviceStatus(device)">
+                                            <i class="bi bi-stop-circle"></i> Desactivar
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

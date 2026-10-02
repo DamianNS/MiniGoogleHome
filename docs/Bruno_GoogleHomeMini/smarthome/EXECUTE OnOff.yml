@@ -1,0 +1,50 @@
+info:
+  name: EXECUTE OnOff
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{server}}/api/smarthome"
+  body:
+    type: json
+    data: |-
+      {
+        "RequestId": "14765377972817432213",
+        "Inputs": [
+          {
+            "Intent": "action.devices.EXECUTE",
+            "Payload": {
+              "devices": [],
+              "commands": [
+                {
+                  "Devices": [
+                    {
+                      "id": "pi_media_speaker_01",
+                      "customData": {}
+                    }
+                  ],
+                  "Execution": [
+                    {
+                      "Command": "action.devices.commands.OnOff",
+                      "Params": {
+                        "MediaQuery": null,
+                        "VolumeLevel": null,
+                        "relativeSteps": null
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

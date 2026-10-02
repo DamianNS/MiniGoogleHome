@@ -1,0 +1,51 @@
+info:
+  name: refresh_token
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{server}}/oauth/token"
+  body:
+    type: form-urlencoded
+    data:
+      - name: grant_type
+        value: refresh_token
+      - name: code
+        value: ""
+        disabled: true
+      - name: client_id
+        value: google-client
+      - name: client_secret
+        value: secret
+      - name: redirect_uri
+        value: https://oauth-redirect.googleusercontent.com/r/asistentecoff
+        disabled: true
+      - name: refresh_token
+        value: NS8x4uf8_YjhC7kMFj2R40v97eFrx158FddBLO9D69A
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.getStatus() === 200 && res.getBody()) {
+          const data = res.getBody();
+          
+          // Guardar el access_token en las variables de entorno
+          if (data.access_token) {
+            bru.setEnvVar("access_token", data.access_token);
+          }
+          
+          // Guardar también el refresh_token si lo necesitás
+          if (data.refresh_token) {
+            bru.setEnvVar("refresh_token", data.refresh_token);
+          }
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

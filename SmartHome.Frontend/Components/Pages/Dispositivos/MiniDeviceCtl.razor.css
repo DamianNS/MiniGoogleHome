@@ -1,0 +1,32 @@
+.mini-player {
+    max-width: 500px;
+    border-radius: 1rem;
+}
+
+.device-info {
+    max-width: 150px;
+}
+
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    padding: 0;
+}
+
+.player-controls .btn-group {
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.player-controls .btn-group .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+

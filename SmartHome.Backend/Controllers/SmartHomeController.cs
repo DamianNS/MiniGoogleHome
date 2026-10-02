@@ -1,186 +1,309 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SmartHome.Backend.Commands;
 using SmartHome.Backend.Services;
 using SmartHome.Shared.Contracts;
+using SmartHome.Shared.Persistence;
+using System.Security.Claims;
 
 namespace SmartHome.Backend.Controllers;
 
 [ApiController]
-[Authorize(AuthenticationSchemes = "Bearer")]
+[Authorize]
 [Route("api/smarthome")]
-public sealed class SmartHomeController : ControllerBase
+public sealed class SmartHomeController(
+    MediaBridgeService mediaBridgeService, 
+    ILogger<SmartHomeController> log,
+    IDbContextFactory<SmartHomeDbContext> dbContextFactory) : ControllerBase
 {
     private const string DeviceId = "pi_media_speaker_01";
-    private readonly MediaBridgeService? mediaBridgeService;
-
-    public SmartHomeController()
+   
+    private async Task<Shared.Entities.Usuario?> GetUser()
     {
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+        if (userIdClaim == null)
+        {
+            return null;
+        }
+        if(!int.TryParse(userIdClaim.Value, out var userId))
+        {
+            log.LogWarning("Invalid user ID claim value: {UserIdClaimValue}", userIdClaim.Value);
+            return null;
+        }
+        using var context = dbContextFactory.CreateDbContext();
+        var user = await context.Usuarios.Include(u => u.Minis).FirstOrDefaultAsync(u => u.Id == userId);
+        return user;
     }
 
-    [ActivatorUtilitiesConstructor]
-    public SmartHomeController(MediaBridgeService mediaBridgeService)
-    {
-        this.mediaBridgeService = mediaBridgeService;
-    }
 
     [HttpPost]
     public async Task<IActionResult> Handle(
         [FromBody] GoogleHomeRequest request,
         CancellationToken cancellationToken)
     {
+        var textorequest = System.Text.Json.JsonSerializer.Serialize(request);
+        log.LogInformation($"api/smarthome request: {textorequest}");
+
+        var user = await GetUser();
+        if (user == null) return NotFound("Usuario no encontrado.");
+
+        log.LogInformation("Received request: {RequestId}, Intent: {Intent}", request.RequestId, request.Inputs.FirstOrDefault()?.Intent);
         var intent = request.Inputs.FirstOrDefault()?.Intent;
         return intent switch
         {
-            GoogleHomeIntents.Sync => Ok(CreateSyncResponse(request.RequestId)),
+            GoogleHomeIntents.Sync => Ok(await CreateSyncResponse(request.RequestId)),
             GoogleHomeIntents.Query => await QueryAsync(request, cancellationToken),
             GoogleHomeIntents.Execute => await ExecuteAsync(request, cancellationToken),
-            _ => BadRequest(new GoogleHomeErrorResponse
-            {
-                RequestId = request.RequestId,
-                Payload = new GoogleHomeErrorPayload
-                {
-                    ErrorCode = "unsupported_intent",
-                    ErrorMessage = "El intent todavía no está implementado."
-                }
-            })
+            _ => BadIntentResponse(request.RequestId)
         };
+    }
+
+    private IActionResult BadIntentResponse(string requestId)
+    {
+        log.LogWarning("Bad intent response for request: {RequestId}, Error", requestId);
+        return BadRequest(new GoogleHomeErrorResponse
+        {
+            RequestId = requestId,
+            Payload = new GoogleHomeErrorPayload
+            {
+                ErrorCode = "unsupported_intent",
+                ErrorMessage = "El intent todavía no está implementado."
+            }
+        });
     }
 
     private async Task<IActionResult> ExecuteAsync(
         GoogleHomeRequest request,
         CancellationToken cancellationToken)
     {
-        if (mediaBridgeService is null || request.Inputs.Count == 0)
+        try
         {
-            return BadRequest(CreateError(request.RequestId, "invalid_request", "El payload EXECUTE no es válido."));
-        }
+            var textorequest = System.Text.Json.JsonSerializer.Serialize(request);
+            log.LogInformation($"Serialized textorequest ExecuteAsync: {textorequest}");
 
-        var responses = new List<GoogleHomeCommandResponse>();
-        foreach (var command in request.Inputs.SelectMany(input => input.Payload.Commands))
-        {
-            var ids = command.Devices.Select(device => device.Id).ToList();
-            if (ids.Count == 0 || ids.Any(id => !string.Equals(id, DeviceId, StringComparison.Ordinal)))
+            log.LogInformation("Executing commands for request: {RequestId}", request.RequestId);
+            if (mediaBridgeService is null || request.Inputs.Count == 0)
             {
-                responses.Add(CreateCommandError(ids, "Dispositivo no soportado."));
-                continue;
+                log.LogCritical("MediaBridgeService is not initialized or request inputs are empty for request: {RequestId}", request.RequestId);
+                return BadRequest(CreateError(request.RequestId, "invalid_request", "El payload EXECUTE no es válido."));
             }
 
-            foreach (var execution in command.Execution)
+            var responses = new List<GoogleHomeCommandResponse>();
+            foreach (var command in request.Inputs.SelectMany(input => input.Payload.Commands))
             {
-                if (string.Equals(execution.Command, GoogleHomeCommands.MediaPlay, StringComparison.Ordinal))
+                var ids = command.Devices.Select(device => device.Id).ToList();
+                if (ids.Count == 0 || ids.Any(id => !string.Equals(id, DeviceId, StringComparison.Ordinal)))
                 {
-                    var query = execution.Params.MediaQuery?.Query ?? string.Empty;
-                    var result = await mediaBridgeService.PlayAsync(query, cancellationToken);
-                    responses.Add(result.Succeeded
-                        ? new GoogleHomeCommandResponse
-                        {
-                            Ids = ids,
-                            Status = "SUCCESS",
-                            States = new GoogleHomeState { PlaybackState = "PLAYING" }
-                        }
-                        : CreateCommandError(ids, result.Error ?? "No se pudo iniciar la reproducción."));
+                    responses.Add(CreateCommandError(ids, "Dispositivo no soportado."));
+                    continue;
                 }
-                else if (string.Equals(execution.Command, GoogleHomeCommands.SetVolume, StringComparison.Ordinal))
+
+                foreach (var execution in command.Execution)
                 {
-                    var volumeLevel = execution.Params.VolumeLevel;
-                    var result = volumeLevel is null
-                        ? new MediaCommandResult(false, "El volumen no es válido.")
-                        : await mediaBridgeService.SetVolumeAsync(volumeLevel.Value, cancellationToken);
-                    responses.Add(result.Succeeded
-                        ? new GoogleHomeCommandResponse
-                        {
-                            Ids = ids,
-                            Status = "SUCCESS",
-                            States = new GoogleHomeState { CurrentVolume = volumeLevel }
-                        }
-                        : CreateCommandError(ids, result.Error ?? "No se pudo ajustar el volumen."));
-                }
-                else
-                {
-                    responses.Add(CreateCommandError(ids, "Comando no soportado."));
+                    switch (execution.Command) { 
+                        case GoogleHomeCommands.MediaPlay:
+                        case GoogleHomeCommands.MediaResume:
+                            responses.Add(await (new MediaPlayCommand(mediaBridgeService)).Execute(execution, ids, cancellationToken));
+                            break;
+                        default:
+                            if (string.Equals(execution.Command, GoogleHomeCommands.SetVolume, StringComparison.Ordinal))
+                            {
+                                var volumeLevel = execution.Params.VolumeLevel;
+                                var result = volumeLevel is null
+                                    ? new MediaCommandResult(false, "El volumen no es válido.")
+                                    : await mediaBridgeService.SetVolumeAsync(volumeLevel.Value, cancellationToken);
+                                responses.Add(result.Succeeded
+                                    ? new GoogleHomeCommandResponse
+                                    {
+                                        Ids = ids,
+                                        Status = "SUCCESS",
+                                        States = new GoogleHomeState { CurrentVolume = volumeLevel }
+                                    }
+                                    : CreateCommandError(ids, result.Error ?? "No se pudo ajustar el volumen."));
+                            }
+                            else if (string.Equals(execution.Command, GoogleHomeCommands.RelativeVolume, StringComparison.Ordinal))
+                            {
+                                var relativeSteps = execution.Params.RelativeSteps ?? 0;
+                                var nuevoVolumen = await mediaBridgeService.SetRelativeVolumeAsync(relativeSteps, cancellationToken);
+                                responses.Add(new GoogleHomeCommandResponse
+                                {
+                                    Ids = ids,
+                                    Status = "SUCCESS",
+                                    States = new GoogleHomeState { CurrentVolume = nuevoVolumen }
+                                });
+                            }
+                            else
+                            {
+                                Console.Error.WriteLine($"Comando no implementado: {execution.Command}");
+                                responses.Add(CreateCommandError(ids, "Comando no soportado."));
+                            }
+                            break;
+                    }
+
+                   
                 }
             }
-        }
 
-        return Ok(new GoogleHomeResponse
+            var ret = new GoogleHomeResponse
+            {
+                RequestId = request.RequestId,
+                Payload = new GoogleHomeResponsePayload { Commands = responses }
+            };
+            log.LogInformation("Execution response for request: {RequestId}, Response: {Response}", request.RequestId, System.Text.Json.JsonSerializer.Serialize(ret));
+            return Ok(ret);
+        }
+        catch (Exception ex)
         {
-            RequestId = request.RequestId,
-            Payload = new GoogleHomeResponsePayload { Commands = responses }
-        });
+            Console.Error.WriteLine($"Error executing commands: {ex.ToString()}");
+            var errRwet = CreateError(request.RequestId, "99", "Error interno");
+            log.LogInformation("Execution Error: {RequestId}, Response: {Response}", request.RequestId, System.Text.Json.JsonSerializer.Serialize(errRwet));
+            return Ok(errRwet);
+        }        
     }
 
     private async Task<IActionResult> QueryAsync(
         GoogleHomeRequest request,
         CancellationToken cancellationToken)
-    {
+    {       
+        var textorequest = System.Text.Json.JsonSerializer.Serialize(request);
+        log.LogInformation($"Serialized textorequest QueryAsync: {textorequest}");
+
         var references = request.Inputs
             .SelectMany(input => input.Payload.Devices)
             .ToList();
         var states = new Dictionary<string, GoogleHomeState>();
+
+        var user = await GetUser();
+        if (user == null) return Unauthorized(CreateError(request.RequestId, "401", "Usuario invalida"));
+
+        using var context = await dbContextFactory.CreateDbContextAsync();
+
         foreach (var reference in references)
         {
-            if (!string.Equals(reference.Id, DeviceId, StringComparison.Ordinal))
+            var ids = reference.Id.Remove(0, "pi_media_speaker_".Length);
+            if (!int.TryParse(ids, out int id)) {
+                log.LogInformation($"El dispositivo con ID {reference.Id} no es un entero.");
+                states[reference.Id] = new GoogleHomeState { Online = false };
+                continue;
+            }
+            var mini = context.Minis.Find(id);
+            if(mini == null)
             {
+                log.LogInformation($"El dispositivo con ID {reference.Id} no esta en la base de datos.");
                 states[reference.Id] = new GoogleHomeState { Online = false };
                 continue;
             }
 
+            //if (!string.Equals(reference.Id, DeviceId, StringComparison.Ordinal))
+            //{
+            //    log.LogInformation($"El dispositivo con ID {reference.Id} no es soportado. Marcando como offline.");
+            //    states[reference.Id] = new GoogleHomeState { Online = false };
+            //    continue;
+            //}
+
             var currentVolume = mediaBridgeService is null
                 ? null
                 : await mediaBridgeService.GetCurrentVolumeAsync(cancellationToken);
-            states[DeviceId] = new GoogleHomeState
+
+            if (mini.Estado != Shared.Constantes.EstadoEnum.Off)
             {
-                Online = true,
-                CurrentVolume = currentVolume
-            };
+
+                var playbackState = mini.Estado switch
+                {
+                    Shared.Constantes.EstadoEnum.Play => Shared.Constantes.PlaybackState.PLAYING,
+                    Shared.Constantes.EstadoEnum.On => Shared.Constantes.PlaybackState.PAUSED,
+                    _ => Shared.Constantes.PlaybackState.STOPPED
+                };
+
+                states[reference.Id] = new GoogleHomeState
+                {
+                    Online = true,
+                    CurrentVolume = currentVolume ?? 50,
+                    PlaybackState = playbackState,
+                    Status = "SUCCESS",
+                    ActivityState = Shared.Constantes.ActivityState.ACTIVE,
+                    On = true
+                };
+            }
+            else {
+                states[reference.Id] = new GoogleHomeState
+                {
+                    Online = false
+                };
+            }            
         }
 
-        return Ok(new GoogleHomeQueryResponse
+        var ret = new GoogleHomeQueryResponse
         {
             RequestId = request.RequestId,
             Payload = new GoogleHomeQueryPayload { Devices = states }
-        });
+        };
+        var texto = System.Text.Json.JsonSerializer.Serialize(ret);
+        log.LogInformation($"Serialized result QueryAsync: {texto}");
+        return Ok(ret);
     }
 
-    private GoogleHomeResponse CreateSyncResponse(string requestId)
+    private async Task<GoogleHomeResponse> CreateSyncResponse(string requestId)
     {
-        var agentUserId = User.FindFirstValue("agent_user_id") ?? string.Empty;
-        return new GoogleHomeResponse
+        log.LogInformation("Creating SYNC response for request: {RequestId}", requestId);
+        
+        using var context = dbContextFactory.CreateDbContext();
+        var user = await GetUser();
+        if(user is null)
+        {
+            log.LogWarning("User not found for SYNC response creation.");
+            throw new InvalidOperationException("User not found for SYNC response creation.");
+        }
+
+        var agentUserId = user.AgentUserId ?? throw new InvalidOperationException("AgentUserId is null for the user.");
+        var devices = user.Minis?.Select(d => new GoogleHomeDevice
+        {
+            Id = $"pi_media_speaker_{d.Id.ToString("00")}",
+            Type = "action.devices.types.SPEAKER",
+            Traits = new List<string>
+            {
+                "action.devices.traits.MediaState",
+                "action.devices.traits.OnOff",
+                "action.devices.traits.TransportControl",
+                "action.devices.traits.Volume"
+            },
+            Name = new GoogleHomeDeviceName
+            {
+                Name = "Perlante Rassberry",
+                DefaultNames = new List<string> { "Perlante Rassberry" },
+                Nicknames = new List<string> { d.Nombre }
+            },
+            WillReportState = false,
+            DeviceInfo = new GoogleHomeDeviceInfo
+            {
+                Manufacturer = "Niquel Soft",
+                Model = "PiMediaBridgeV1",
+                HwVersion = "Raspberry Pi",
+                SwVersion = "1.0.0"
+            },
+            Attributes = new GoogleHomeDeviceAttributes
+            {
+                volumeMaxLevel = 100,
+                volumeCanMuteAndUnmute = true
+            }
+        }).ToList();
+
+        var ret = new GoogleHomeResponse
         {
             RequestId = requestId,
             Payload = new GoogleHomeResponsePayload
             {
                 AgentUserId = agentUserId,
-                Devices =
-                [
-                    new GoogleHomeDevice
-                    {
-                        Id = DeviceId,
-                        Type = "action.devices.types.SPEAKER",
-                        Traits =
-                        [
-                            "action.devices.traits.MediaState",
-                            "action.devices.traits.Volume"
-                        ],
-                        Name = new GoogleHomeDeviceName
-                        {
-                            Name = "Parlante Raspberry",
-                            DefaultNames = ["Reproductor de la Pi"],
-                            Nicknames = ["Audio de la Pi"]
-                        },
-                        WillReportState = false,
-                        DeviceInfo = new GoogleHomeDeviceInfo
-                        {
-                            Manufacturer = "Niquelsoft",
-                            Model = "PiMediaBridgeV1",
-                            HwVersion = "Raspberry Pi",
-                            SwVersion = "1.0.0"
-                        }
-                    }
-                ]
+                Devices = devices ?? new List<GoogleHomeDevice>(),
+                Commands = null
             }
         };
+
+        var texto = System.Text.Json.JsonSerializer.Serialize(ret);
+        log.LogInformation($"Serialized result SYNC: {texto}");
+
+        return ret;
     }
 
     private static GoogleHomeCommandResponse CreateCommandError(

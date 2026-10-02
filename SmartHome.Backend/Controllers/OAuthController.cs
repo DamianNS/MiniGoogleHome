@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Backend.Contracts;
 using SmartHome.Backend.Services;
+using SmartHome.Shared.Request;
+using System.Text.Json.Serialization;
 
 namespace SmartHome.Backend.Controllers;
 
 [ApiController]
 [Route("oauth")]
-public sealed class OAuthController(OAuthTokenService tokenService) : ControllerBase
+public sealed class OAuthController(OAuthTokenService tokenService, ILogger<OAuthController> log) : ControllerBase
 {
     [HttpPost("token")]
     [Consumes("application/x-www-form-urlencoded")]
@@ -14,6 +16,9 @@ public sealed class OAuthController(OAuthTokenService tokenService) : Controller
         [FromForm] OAuthTokenRequest request,
         CancellationToken cancellationToken)
     {
+        log.LogInformation($"Received OAuth token request with grant type: {request.GrantType}");
+        log.LogInformation($"Request details: ClientSecret={request.ClientSecret}, ClientId={request.ClientId}, RedirectUri={request.RedirectUri}, Code={request.Code}, RefreshToken={request.RefreshToken}");
+
         OAuthTokenServiceResult result;
         if (string.Equals(request.GrantType, "refresh_token", StringComparison.Ordinal))
         {
@@ -23,9 +28,28 @@ public sealed class OAuthController(OAuthTokenService tokenService) : Controller
         {
             result = await tokenService.ExchangeAsync(request, cancellationToken);
         }
-
+        
+        log.LogInformation($"Token request result: IsSuccess={result.IsSuccess}");
+        if(result.IsSuccess)
+        {
+            log.LogInformation($"Token response: AccessToken={result.Response?.AccessToken}, ExpiresIn={result.Response?.ExpiresIn}, RefreshToken={result.Response?.RefreshToken}");
+            var texto = System.Text.Json.JsonSerializer.Serialize(result.Response);
+            log.LogInformation($"Serialized result: {texto}");
+        }
+        else
+        {
+            log.LogWarning($"Token request failed: Error={result.Error?.Error}, Description={result.Error?.ErrorDescription}");
+        }
+        
         return result.IsSuccess
             ? Ok(result.Response)
             : BadRequest(result.Error);
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> GetToken(LoginRequest login)
+    {
+        var result = await tokenService.GetTokenAsync(login.Usuario, login.Password);
+        return Ok(result);
     }
 }
