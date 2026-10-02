@@ -1,4 +1,4 @@
-﻿namespace SmartHome.Shared.Tests;
+namespace SmartHome.Shared.Tests;
 
 public class UnitTest1
 {

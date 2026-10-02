@@ -12,8 +12,8 @@ public interface IVolumeController
 }
 
 public sealed class LinuxVolumeController(
-    IExternalProcessRunner processRunner,
-    IOptions<AudioOptions> audioOptions,
+    //IExternalProcessRunner processRunner,
+    //IOptions<AudioOptions> audioOptions,
     ILogger<LinuxVolumeController> logger) : IVolumeController
 {
     public async Task<AudioOperationResult> SetAsync(
@@ -22,73 +22,66 @@ public sealed class LinuxVolumeController(
     {
         if (volumeLevel is < 0 or > 100)
         {
-            Console.WriteLine($"El volumen {volumeLevel} está fuera del rango permitido (0-100).");
-            if(volumeLevel < 0)
-            {
-                volumeLevel = 0;
-            }
-            if(volumeLevel > 100)
-            {
-                volumeLevel = 100;
-            }
-            //return new AudioOperationResult(false, "El volumen debe estar entre 0 y 100.");
+            volumeLevel = Math.Clamp(volumeLevel, 0, 100);
         }
 
-        return new AudioOperationResult(true);
-
-        //try
-        //{
-        //    var result = await processRunner.RunAsync(
-        //        audioOptions.Value.AmixerPath,
-        //        ["set", audioOptions.Value.MixerName, $"{volumeLevel}%"],
-        //        cancellationToken);
-        //    return result.ExitCode == 0
-        //        ? new AudioOperationResult(true)
-        //        : new AudioOperationResult(false, "amixer devolvió un error.");
-        //}
-        //catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
-        //{
-        //    logger.LogWarning("No se pudo ajustar el volumen: {Error}", exception.Message);
-        //    return new AudioOperationResult(false, "No se pudo ajustar el volumen.");
-        //}
+        try
+        {
+            using var socket = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.Unix, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Unspecified);
+            await socket.ConnectAsync(new System.Net.Sockets.UnixDomainSocketEndPoint("/tmp/mpv-socket"), cancellationToken);
+            
+            var command = $"set volume {volumeLevel}\n";
+            var bytes = System.Text.Encoding.UTF8.GetBytes(command);
+            await socket.SendAsync(bytes, System.Net.Sockets.SocketFlags.None, cancellationToken);
+            
+            return new AudioOperationResult(true);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning("No se pudo ajustar el volumen mediante socket: {Error}", exception.Message);
+            return new AudioOperationResult(false, "No se pudo ajustar el volumen.");
+        }
     }
 
     public async Task<int?> GetCurrentAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var result = await processRunner.RunAsync(
-                audioOptions.Value.AmixerPath,
-                ["get", audioOptions.Value.MixerName],
-                cancellationToken);
-            if (result.ExitCode != 0)
+            using var socket = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.Unix, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Unspecified);
+            await socket.ConnectAsync(new System.Net.Sockets.UnixDomainSocketEndPoint("/tmp/mpv-socket"), cancellationToken);
+            
+            var command = "{ \"command\": [\"get_property\", \"volume\"] }\n";
+            var bytes = System.Text.Encoding.UTF8.GetBytes(command);
+            await socket.SendAsync(bytes, System.Net.Sockets.SocketFlags.None, cancellationToken);
+            
+            var buffer = new byte[1024];
+            var received = await socket.ReceiveAsync(buffer, System.Net.Sockets.SocketFlags.None, cancellationToken);
+            if (received == 0) return null;
+            
+            var response = System.Text.Encoding.UTF8.GetString(buffer, 0, received);
+            
+            var lines = response.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
             {
-                return null;
+                try
+                {
+                    var doc = System.Text.Json.JsonDocument.Parse(line);
+                    if (doc.RootElement.TryGetProperty("data", out var dataElement) && dataElement.TryGetDouble(out var vol))
+                    {
+                        return (int)Math.Round(vol);
+                    }
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    // Ignore non-JSON lines or parse errors
+                }
             }
-
-            var marker = result.StandardOutput.IndexOf('%');
-            if (marker <= 0)
-            {
-                return null;
-            }
-
-            var start = marker - 1;
-            while (start >= 0 && char.IsDigit(result.StandardOutput[start]))
-            {
-                start--;
-            }
-
-            return int.TryParse(
-                result.StandardOutput[(start + 1)..marker],
-                NumberStyles.Integer,
-                CultureInfo.InvariantCulture,
-                out var volume)
-                ? Math.Clamp(volume, 0, 100)
-                : null;
+            
+            return null;
         }
-        catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
+        catch (Exception exception)
         {
-            logger.LogWarning("No se pudo consultar el volumen: {Error}", exception.Message);
+            logger.LogWarning("No se pudo consultar el volumen mediante socket: {Error}", exception.Message);
             return null;
         }
     }

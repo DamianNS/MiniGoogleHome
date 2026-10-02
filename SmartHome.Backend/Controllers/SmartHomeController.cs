@@ -93,7 +93,27 @@ public sealed class SmartHomeController(
             foreach (var command in request.Inputs.SelectMany(input => input.Payload.Commands))
             {
                 var ids = command.Devices.Select(device => device.Id).ToList();
-                if (ids.Count == 0 || ids.Any(id => !string.Equals(id, DeviceId, StringComparison.Ordinal)))
+
+                var idsNormalizados = ids.Select(id => id.Remove(0, "pi_media_speaker_".Length)).ToList();
+                var idsEnteros = new List<int>();
+                foreach (var id in idsNormalizados)
+                {
+                    if (int.TryParse(id, out int idEntero))
+                    {
+                        idsEnteros.Add(idEntero);
+                    }
+                    else
+                    {
+                        log.LogWarning("Invalid device ID format: {DeviceId} for request: {RequestId}", id, request.RequestId);
+                        responses.Add(CreateCommandError(ids, $"El ID de dispositivo {id} no es válido."));
+                        continue;
+                    }
+                }
+
+                var context = dbContextFactory.CreateDbContext();
+                var minis = await context.Minis.Where(m => idsEnteros.Contains(m.Id)).ToListAsync(cancellationToken);
+
+                if (!minis.Any())
                 {
                     responses.Add(CreateCommandError(ids, "Dispositivo no soportado."));
                     continue;
@@ -104,45 +124,30 @@ public sealed class SmartHomeController(
                     switch (execution.Command) { 
                         case GoogleHomeCommands.MediaPlay:
                         case GoogleHomeCommands.MediaResume:
-                            responses.Add(await (new MediaPlayCommand(mediaBridgeService)).Execute(execution, ids, cancellationToken));
+                            responses.Add(await new MediaPlayCommand(mediaBridgeService).Execute(execution, ids, minis, cancellationToken));
+                            break;
+                        case GoogleHomeCommands.RelativeVolume:
+                            responses.Add(await new RelativeVolumeCommand(mediaBridgeService).Execute(execution, ids, minis, cancellationToken));
+                            break;
+                        case GoogleHomeCommands.SetVolume:
+                            responses.Add(await new SetVolumeCommand(mediaBridgeService).Execute(execution, ids, minis, cancellationToken));
+                            break;
+                        case GoogleHomeCommands.OnOff:
+                            responses.Add(await new OnOffCommand().Execute(execution, ids, minis, cancellationToken));
+                            break;
+                        case GoogleHomeCommands.Mute:
+                            responses.Add(await new MuteCommand(mediaBridgeService).Execute(execution, ids, minis, cancellationToken));
+                            break;
+                        case GoogleHomeCommands.MediaPause:
+                            responses.Add(await new MediaPauseCommand(mediaBridgeService).Execute(execution, ids, minis, cancellationToken));
                             break;
                         default:
-                            if (string.Equals(execution.Command, GoogleHomeCommands.SetVolume, StringComparison.Ordinal))
-                            {
-                                var volumeLevel = execution.Params.VolumeLevel;
-                                var result = volumeLevel is null
-                                    ? new MediaCommandResult(false, "El volumen no es válido.")
-                                    : await mediaBridgeService.SetVolumeAsync(volumeLevel.Value, cancellationToken);
-                                responses.Add(result.Succeeded
-                                    ? new GoogleHomeCommandResponse
-                                    {
-                                        Ids = ids,
-                                        Status = "SUCCESS",
-                                        States = new GoogleHomeState { CurrentVolume = volumeLevel }
-                                    }
-                                    : CreateCommandError(ids, result.Error ?? "No se pudo ajustar el volumen."));
-                            }
-                            else if (string.Equals(execution.Command, GoogleHomeCommands.RelativeVolume, StringComparison.Ordinal))
-                            {
-                                var relativeSteps = execution.Params.RelativeSteps ?? 0;
-                                var nuevoVolumen = await mediaBridgeService.SetRelativeVolumeAsync(relativeSteps, cancellationToken);
-                                responses.Add(new GoogleHomeCommandResponse
-                                {
-                                    Ids = ids,
-                                    Status = "SUCCESS",
-                                    States = new GoogleHomeState { CurrentVolume = nuevoVolumen }
-                                });
-                            }
-                            else
-                            {
-                                Console.Error.WriteLine($"Comando no implementado: {execution.Command}");
-                                responses.Add(CreateCommandError(ids, "Comando no soportado."));
-                            }
+                            Console.Error.WriteLine($"Comando no implementado: {execution.Command}");
+                            responses.Add(CreateCommandError(ids, "Comando no soportado."));
                             break;
-                    }
-
-                   
+                    }                   
                 }
+                context.SaveChanges();
             }
 
             var ret = new GoogleHomeResponse
@@ -195,36 +200,55 @@ public sealed class SmartHomeController(
                 continue;
             }
 
-            //if (!string.Equals(reference.Id, DeviceId, StringComparison.Ordinal))
-            //{
-            //    log.LogInformation($"El dispositivo con ID {reference.Id} no es soportado. Marcando como offline.");
-            //    states[reference.Id] = new GoogleHomeState { Online = false };
-            //    continue;
-            //}
+            var data = (mini.Data != null
+                ? System.Text.Json.JsonSerializer.Deserialize<GoogleHomeState>(mini.Data)
+                : null) ?? new GoogleHomeState();
+
+            log.LogInformation($"DATA JSON: {mini.Data}");
+            log.LogInformation($"DATA: {System.Text.Json.JsonSerializer.Serialize(data)}");
+
+            data.ActivityState ??= Shared.Constantes.ActivityState.ACTIVE;
+            data.PlaybackState ??= Shared.Constantes.PlaybackState.STOPPED;
 
             var currentVolume = mediaBridgeService is null
                 ? null
                 : await mediaBridgeService.GetCurrentVolumeAsync(cancellationToken);
 
+            //data.Online = true;
+            data.CurrentVolume = currentVolume ?? data.CurrentVolume;
+
             if (mini.Estado != Shared.Constantes.EstadoEnum.Off)
             {
-
                 var playbackState = mini.Estado switch
                 {
-                    Shared.Constantes.EstadoEnum.Play => Shared.Constantes.PlaybackState.PLAYING,
-                    Shared.Constantes.EstadoEnum.On => Shared.Constantes.PlaybackState.PAUSED,
+                    Shared.Constantes.EstadoEnum.Play => Shared.Constantes.PlaybackState.PLAYING,                    
                     _ => Shared.Constantes.PlaybackState.STOPPED
                 };
 
-                states[reference.Id] = new GoogleHomeState
-                {
-                    Online = true,
-                    CurrentVolume = currentVolume ?? 50,
-                    PlaybackState = playbackState,
-                    Status = "SUCCESS",
-                    ActivityState = Shared.Constantes.ActivityState.ACTIVE,
-                    On = true
-                };
+                // data.Online = true;
+                // data.CurrentVolume = currentVolume ?? data.CurrentVolume ?? 50;
+                // data.PlaybackState = playbackState;
+                // data.Status = "SUCCESS";
+                // data.ActivityState = Shared.Constantes.ActivityState.STANDBY;
+                // data.On = true;
+                // data.IsMuted = false;
+
+                states[reference.Id] = data;
+                // states[reference.Id] = new GoogleHomeState
+                // {
+                //     Online = true,
+                //     CurrentVolume = currentVolume ?? data?.CurrentVolume ?? 50,
+                //     PlaybackState = playbackState,
+                //     Status = "SUCCESS",
+                //     ActivityState = data?.ActivityState ?? Shared.Constantes.ActivityState.ACTIVE,
+                //     On = data?.On ?? true,
+                //     IsMuted = data?.IsMuted ?? false,
+                // };
+
+                var jsonData = System.Text.Json.JsonSerializer.Serialize(data);
+                log.LogInformation($"Device state for {reference.Id}: {jsonData}");
+                mini.Data = jsonData;
+                context.SaveChanges();
             }
             else {
                 states[reference.Id] = new GoogleHomeState

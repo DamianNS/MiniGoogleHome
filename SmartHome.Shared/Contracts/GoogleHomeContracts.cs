@@ -15,13 +15,11 @@ public static class GoogleHomeCommands
 {
     public const string MediaPlay = "action.devices.commands.mediaPlay";
     public const string SetVolume = "action.devices.commands.setVolume";
-    public const string RelativeVolume = "action.devices.commands.volumeRelative"; // este es valido
-
+    public const string RelativeVolume = "action.devices.commands.volumeRelative";
     public const string MediaResume = "action.devices.commands.mediaResume";
-
-    
-
-
+    public const string OnOff = "action.devices.commands.OnOff";
+    public const string Mute = "action.devices.commands.mute";
+    public const string MediaPause = "action.devices.commands.mediaPause";
 }
 
 public sealed class GoogleHomeRequest
@@ -78,6 +76,12 @@ public sealed class GoogleHomeCommandParameters
 
     [JsonPropertyName("relativeSteps")]
     public int? RelativeSteps { get; set; }
+
+    [JsonPropertyName("on")]
+    public bool? On { get; set; }
+
+    [JsonPropertyName("mute")]
+    public bool? Mute { get; set; }
 }
 
 public sealed class GoogleHomeMediaQuery
@@ -186,23 +190,26 @@ public sealed class GoogleHomeCommandResponse
 
 public sealed class GoogleHomeState
 {
-    [JsonPropertyName("status")]
-    public string? Status { get; set; }
+    // [JsonPropertyName("status")]
+    // public string? Status { get; set; } = StatusEnum.Online.ToString();
 
     [JsonPropertyName("playbackState")]
-    public string? PlaybackState { get; set; }
+    public string PlaybackState { get; set; } = Constantes.PlaybackState.STOPPED;
 
     [JsonPropertyName("currentVolume")]
-    public int? CurrentVolume { get; set; }
+    public int CurrentVolume { get; set; } = 50;
 
     [JsonPropertyName("online")]
     public bool Online { get; set; } = true;
 
     [JsonPropertyName("activityState")]
-    public string? ActivityState { get; set; }
+    public string ActivityState { get; set; } = Constantes.ActivityState.ACTIVE;
 
     [JsonPropertyName("on")]
-    public bool? On { get; set; }
+    public bool On { get; set; } = true;
+
+    [JsonPropertyName("isMuted")]
+    public bool IsMuted { get; set; } = false;
 }
 
 public sealed class GoogleHomeErrorResponse

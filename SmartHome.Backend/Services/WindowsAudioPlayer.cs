@@ -10,9 +10,16 @@ public class WindowsAudioPlayer(ILogger<LinuxAudioPlayer> logger) : IAudioPlayer
 
     private const string urlRadio = "https://playerservices.streamtheworld.com/api/livestream-redirect/UNOAAC.aac";
     private LibVLC libVLC = new LibVLC();
-    private MediaPlayer mediaPlayer { get; set; }
+    private MediaPlayer? mediaPlayer { get; set; }
 
-    private Media media { get; set; }
+    private Media? media { get; set; }
+
+    public async Task<AudioOperationResult> StopAsync(
+        CancellationToken cancellationToken = default)
+    {
+        StopActiveProcess();
+        return new AudioOperationResult(true);
+    }
 
     public async Task<AudioOperationResult> PlayAsync(
         string query,
