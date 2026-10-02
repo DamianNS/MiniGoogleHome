@@ -15,13 +15,9 @@ public static class GoogleHomeCommands
 {
     public const string MediaPlay = "action.devices.commands.mediaPlay";
     public const string SetVolume = "action.devices.commands.setVolume";
-    public const string RelativeVolume = "action.devices.commands.volumeRelative"; // este es valido
-
+    public const string RelativeVolume = "action.devices.commands.volumeRelative";
     public const string MediaResume = "action.devices.commands.mediaResume";
-
-    
-
-
+    public const string OnOff = "action.devices.commands.OnOff";
 }
 
 public sealed class GoogleHomeRequest
@@ -78,6 +74,9 @@ public sealed class GoogleHomeCommandParameters
 
     [JsonPropertyName("relativeSteps")]
     public int? RelativeSteps { get; set; }
+
+    [JsonPropertyName("on")]
+    public bool? On { get; set; }
 }
 
 public sealed class GoogleHomeMediaQuery
@@ -203,6 +202,9 @@ public sealed class GoogleHomeState
 
     [JsonPropertyName("on")]
     public bool? On { get; set; }
+
+    [JsonPropertyName("isMuted")]
+    public bool IsMuted { get; set; } = false;
 }
 
 public sealed class GoogleHomeErrorResponse
