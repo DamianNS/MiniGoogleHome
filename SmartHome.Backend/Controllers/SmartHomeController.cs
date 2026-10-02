@@ -106,38 +106,15 @@ public sealed class SmartHomeController(
                         case GoogleHomeCommands.MediaResume:
                             responses.Add(await (new MediaPlayCommand(mediaBridgeService)).Execute(execution, ids, cancellationToken));
                             break;
+                        case GoogleHomeCommands.RelativeVolume:
+                            responses.Add(await (new RelativeVolumeCommand(mediaBridgeService)).Execute(execution, ids, cancellationToken));
+                            break;
+                        case GoogleHomeCommands.SetVolume:
+                            responses.Add(await (new SetVolumeCommand(mediaBridgeService)).Execute(execution, ids, cancellationToken));
+                            break;
                         default:
-                            if (string.Equals(execution.Command, GoogleHomeCommands.SetVolume, StringComparison.Ordinal))
-                            {
-                                var volumeLevel = execution.Params.VolumeLevel;
-                                var result = volumeLevel is null
-                                    ? new MediaCommandResult(false, "El volumen no es válido.")
-                                    : await mediaBridgeService.SetVolumeAsync(volumeLevel.Value, cancellationToken);
-                                responses.Add(result.Succeeded
-                                    ? new GoogleHomeCommandResponse
-                                    {
-                                        Ids = ids,
-                                        Status = "SUCCESS",
-                                        States = new GoogleHomeState { CurrentVolume = volumeLevel }
-                                    }
-                                    : CreateCommandError(ids, result.Error ?? "No se pudo ajustar el volumen."));
-                            }
-                            else if (string.Equals(execution.Command, GoogleHomeCommands.RelativeVolume, StringComparison.Ordinal))
-                            {
-                                var relativeSteps = execution.Params.RelativeSteps ?? 0;
-                                var nuevoVolumen = await mediaBridgeService.SetRelativeVolumeAsync(relativeSteps, cancellationToken);
-                                responses.Add(new GoogleHomeCommandResponse
-                                {
-                                    Ids = ids,
-                                    Status = "SUCCESS",
-                                    States = new GoogleHomeState { CurrentVolume = nuevoVolumen }
-                                });
-                            }
-                            else
-                            {
-                                Console.Error.WriteLine($"Comando no implementado: {execution.Command}");
-                                responses.Add(CreateCommandError(ids, "Comando no soportado."));
-                            }
+                            Console.Error.WriteLine($"Comando no implementado: {execution.Command}");
+                            responses.Add(CreateCommandError(ids, "Comando no soportado."));
                             break;
                     }
 
