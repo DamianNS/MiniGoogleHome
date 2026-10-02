@@ -5,7 +5,7 @@ COPY ["SmartHome.Shared/SmartHome.Shared.csproj", "SmartHome.Shared/"]
 RUN dotnet restore "SmartHome.Backend/SmartHome.Backend.csproj"
 
 RUN apt-get update && apt-get install -y rsync
-COPY . /tmp/src
+COPY . /tmp/src/
 RUN rsync -av --dry-run /tmp/src/ /src/
 #COPY . .
 WORKDIR "/src/SmartHome.Backend"
