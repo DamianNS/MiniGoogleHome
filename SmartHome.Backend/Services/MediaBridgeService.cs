@@ -10,6 +10,25 @@ public sealed class MediaBridgeService(
     IDbContextFactory<SmartHomeDbContext> dbContextFactory,
     ILogger<MediaBridgeService> logger)
 {
+    public async Task<MediaCommandResult> StopAsync(        
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await audioPlayer.StopAsync(cancellationToken);            
+            return new MediaCommandResult(result.Succeeded, result.Error);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "El ejecutor de audio produjo una excepción.");            
+            return new MediaCommandResult(false, "No se pudo iniciar la reproducción.");
+        }
+    }
+
     public async Task<MediaCommandResult> PlayAsync(
         string query,
         CancellationToken cancellationToken = default)

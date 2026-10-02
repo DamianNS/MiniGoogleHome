@@ -19,6 +19,7 @@ public static class GoogleHomeCommands
     public const string MediaResume = "action.devices.commands.mediaResume";
     public const string OnOff = "action.devices.commands.OnOff";
     public const string Mute = "action.devices.commands.mute";
+    public const string MediaPause = "action.devices.commands.mediaPause";
 }
 
 public sealed class GoogleHomeRequest

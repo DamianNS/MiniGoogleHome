@@ -12,6 +12,13 @@ public sealed class LinuxAudioPlayer(
     private readonly object processLock = new();
     private Process? activeProcess;
 
+    public async Task<AudioOperationResult> StopAsync(
+        CancellationToken cancellationToken = default)
+    {
+        StopActiveProcess();
+        return new AudioOperationResult(true);
+    }
+
     public async Task<AudioOperationResult> PlayAsync(
         string query,
         CancellationToken cancellationToken = default)
