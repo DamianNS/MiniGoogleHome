@@ -201,6 +201,12 @@ public sealed class SmartHomeController(
                 ? System.Text.Json.JsonSerializer.Deserialize<GoogleHomeState>(mini.Data)
                 : null) ?? new GoogleHomeState();
 
+            log.LogInformation($"DATA JSON: {mini.Data}");
+            log.LogInformation($"DATA: {System.Text.Json.JsonSerializer.Serialize(data)}");
+
+            data.ActivityState ??= Shared.Constantes.ActivityState.ACTIVE;
+            data.PlaybackState ??= Shared.Constantes.PlaybackState.STOPPED;
+
             var currentVolume = mediaBridgeService is null
                 ? null
                 : await mediaBridgeService.GetCurrentVolumeAsync(cancellationToken);
@@ -236,7 +242,7 @@ public sealed class SmartHomeController(
                 //     IsMuted = data?.IsMuted ?? false,
                 // };
 
-                var jsonData = System.Text.Json.JsonSerializer.Serialize(states[reference.Id]);
+                var jsonData = System.Text.Json.JsonSerializer.Serialize(data);
                 log.LogInformation($"Device state for {reference.Id}: {jsonData}");
                 mini.Data = jsonData;
                 context.SaveChanges();
