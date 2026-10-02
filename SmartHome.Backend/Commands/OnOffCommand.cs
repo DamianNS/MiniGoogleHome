@@ -6,7 +6,7 @@ using SmartHome.Shared.Persistence;
 
 namespace SmartHome.Backend.Commands;
 
-public class OnOffCommand(MediaBridgeService mediaBridgeService) : ICommandHome
+public class OnOffCommand : ICommandHome
 {
     public async Task<GoogleHomeCommandResponse> Execute(GoogleHomeExecution execution, List<string> ids, List<MiniDTO> minis, CancellationToken cancellationToken=default)
     {

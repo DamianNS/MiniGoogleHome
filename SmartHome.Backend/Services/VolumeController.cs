@@ -12,8 +12,8 @@ public interface IVolumeController
 }
 
 public sealed class LinuxVolumeController(
-    IExternalProcessRunner processRunner,
-    IOptions<AudioOptions> audioOptions,
+    //IExternalProcessRunner processRunner,
+    //IOptions<AudioOptions> audioOptions,
     ILogger<LinuxVolumeController> logger) : IVolumeController
 {
     public async Task<AudioOperationResult> SetAsync(
