@@ -133,7 +133,7 @@ public sealed class SmartHomeController(
                             responses.Add(await new SetVolumeCommand(mediaBridgeService).Execute(execution, ids, minis, cancellationToken));
                             break;
                         case GoogleHomeCommands.OnOff:
-                            responses.Add(await new OnOffCommand(mediaBridgeService).Execute(execution, ids, minis, cancellationToken));
+                            responses.Add(await new OnOffCommand().Execute(execution, ids, minis, cancellationToken));
                             break;
                         case GoogleHomeCommands.Mute:
                             responses.Add(await new MuteCommand(mediaBridgeService).Execute(execution, ids, minis, cancellationToken));
