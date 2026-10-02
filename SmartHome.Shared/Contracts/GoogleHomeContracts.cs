@@ -18,6 +18,7 @@ public static class GoogleHomeCommands
     public const string RelativeVolume = "action.devices.commands.volumeRelative";
     public const string MediaResume = "action.devices.commands.mediaResume";
     public const string OnOff = "action.devices.commands.OnOff";
+    public const string Mute = "action.devices.commands.mute";
 }
 
 public sealed class GoogleHomeRequest
@@ -77,6 +78,9 @@ public sealed class GoogleHomeCommandParameters
 
     [JsonPropertyName("on")]
     public bool? On { get; set; }
+
+    [JsonPropertyName("mute")]
+    public bool? Mute { get; set; }
 }
 
 public sealed class GoogleHomeMediaQuery

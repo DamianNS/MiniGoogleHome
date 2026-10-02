@@ -135,6 +135,9 @@ public sealed class SmartHomeController(
                         case GoogleHomeCommands.OnOff:
                             responses.Add(await new OnOffCommand(mediaBridgeService).Execute(execution, ids, minis, cancellationToken));
                             break;
+                        case GoogleHomeCommands.Mute:
+                            responses.Add(await new MuteCommand(mediaBridgeService).Execute(execution, ids, minis, cancellationToken));
+                            break;
                         default:
                             Console.Error.WriteLine($"Comando no implementado: {execution.Command}");
                             responses.Add(CreateCommandError(ids, "Comando no soportado."));
