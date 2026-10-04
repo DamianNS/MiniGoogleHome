@@ -9,10 +9,8 @@
     <File Path="README.md" />
     <File Path="tareas.md" />
   </Folder>
-  <Project Path="SmartHome.Backend.Tests/SmartHome.Backend.Tests.csproj" />
   <Project Path="SmartHome.Backend/SmartHome.Backend.csproj" />
-  <Project Path="SmartHome.Frontend.Tests/SmartHome.Frontend.Tests.csproj" />
+  <Project Path="SmartHome.Device/SmartHome.Device.csproj" Id="327eb31f-c1e4-48c6-af2a-6789ffa6a9f0" />
   <Project Path="SmartHome.Frontend/SmartHome.Frontend.csproj" />
-  <Project Path="SmartHome.Shared.Tests/SmartHome.Shared.Tests.csproj" />
   <Project Path="SmartHome.Shared/SmartHome.Shared.csproj" />
 </Solution>

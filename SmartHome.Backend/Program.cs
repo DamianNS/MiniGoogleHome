@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using SmartHome.Backend.Authentication;
 using SmartHome.Backend.Configuration;
+using SmartHome.Backend.Hubs;
 using SmartHome.Backend.Services;
 using SmartHome.Shared.Configuration;
 using SmartHome.Shared.Persistence;
@@ -64,7 +65,21 @@ public static class Program {
                 ValidateAudience = false, // Cambiar a true en producción si configuras Audience
                 ValidateLifetime = true
             };
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    if (!string.IsNullOrEmpty(accessToken) &&
+                        context.HttpContext.Request.Path.StartsWithSegments(DeviceHub.Route))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                }
+            };
         });
+        builder.Services.AddSignalR();
 
         //builder.Services
         //    .AddAuthentication("Bearer")
@@ -127,6 +142,7 @@ public static class Program {
 
         app.MapStaticAssets();
         app.MapControllers();
+        app.MapHub<DeviceHub>(DeviceHub.Route);
         app.UseStaticFiles();        
         app.MapFallbackToFile("index.html");
 
