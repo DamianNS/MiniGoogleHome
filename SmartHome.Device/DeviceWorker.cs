@@ -8,6 +8,8 @@ namespace SmartHome.Device;
 /// </summary>
 public sealed class DeviceWorker(
     IOptions<BackendHubOptions> options,
+    ITokenStore tokenStore,
+    IHostApplicationLifetime lifetime,
     ILogger<DeviceWorker> logger) : BackgroundService
 {
     private static readonly TimeSpan[] ReconnectDelays =
@@ -19,13 +21,18 @@ public sealed class DeviceWorker(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (tokenStore.Load() is null)
+        {
+            logger.LogError("No hay token guardado. Ejecute 'SmartHome.Device login' primero.");
+            lifetime.StopApplication();
+            return;
+        }
+
         var builder = new HubConnectionBuilder()
-            .WithUrl(_options.HubUrl, o =>
+            .WithUrl(_options.HubUri, o =>
             {
-                if (!string.IsNullOrWhiteSpace(_options.AccessToken))
-                {
-                    o.AccessTokenProvider = () => Task.FromResult<string?>(_options.AccessToken);
-                }
+                // Se lee en cada (re)conexión para tomar el token vigente.
+                o.AccessTokenProvider = () => Task.FromResult(tokenStore.Load()?.AccessToken);
             })
             .WithAutomaticReconnect(new RetryPolicy());
 
@@ -76,7 +83,7 @@ public sealed class DeviceWorker(
             try
             {
                 await connection.StartAsync(ct);
-                logger.LogInformation("Conectado a {Url}. Esperando comandos.", _options.HubUrl);
+                logger.LogInformation("Conectado a {Url}. Esperando comandos.", _options.HubUri);
                 return;
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
